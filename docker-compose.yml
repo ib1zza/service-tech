@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    container_name: service-tech-backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production # ← ВОТ ТУТ!
+    depends_on:
+      - db
+    volumes:
+      - ./backend/storage:/app/storage
+
+  frontend:
+    build: ./frontend
+    container_name: service-tech-frontend
+    ports:
+      - "5173:80"
+
+  db:
+    image: postgres:15-alpine
+    container_name: service-tech-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
