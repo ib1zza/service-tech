@@ -1,24 +1,6 @@
 version: "3.9"
 
 services:
-  backend:
-    build: ./backend
-    container_name: service-tech-backend
-    expose:
-      - "5000"
-    env_file:
-      - .env
-    depends_on:
-      - db
-    volumes:
-      - ./backend/storage:/app/storage
-
-  frontend:
-    build: ./frontend
-    container_name: service-tech-frontend
-    expose:
-      - "80"
-
   db:
     image: postgres:15-alpine
     container_name: service-tech-db
@@ -29,6 +11,32 @@ services:
       POSTGRES_DB: ${DB_NAME}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: service-tech-backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/storage:/app/storage
+
+  frontend:
+    build: ./frontend
+    container_name: service-tech-frontend
+    ports:
+      - "5173:80"
 
 volumes:
   pgdata:
