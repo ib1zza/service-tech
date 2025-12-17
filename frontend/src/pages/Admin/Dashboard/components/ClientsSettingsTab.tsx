@@ -192,7 +192,7 @@ export default function ClientsSettingsTab() {
   // Открывает диалог для редактирования существующего клиента.
   const handleEditClient = (client: ClientFromServer) => {
     // Устанавливаем клиента для редактирования, включая очистку поля пароля для редактирования
-    setEditingClient({ ...client, password_plain: "" });
+    setEditingClient({ ...client });
     // Сброс ошибок и сообщений при открытии
     setErrors({
       login: false,
