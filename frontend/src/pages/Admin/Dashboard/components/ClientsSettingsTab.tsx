@@ -40,7 +40,7 @@ export default function ClientsSettingsTab() {
   // Состояние для данных нового клиента, который будет добавлен.
   const [newClient, setNewClient] = useState<Omit<ClientFromServer, "id">>({
     login_client: "",
-    password: "",
+    password_plain: "",
     phone_number_client: "",
     company_name: "",
   });
@@ -65,12 +65,21 @@ export default function ClientsSettingsTab() {
   const [isEditing, setIsEditing] = useState(false);
   // Флаг, указывающий на состояние загрузки данных клиентов.
   const [loading, setLoading] = useState(true);
-  // Состояние для хранения ошибок валидации полей формы.
+
+  // !!! ИЗМЕНЕНИЕ: Объявление ошибок для согласованности с логикой validateInputs
   const [errors, setErrors] = useState({
     login: false,
-    password_plain: false,
+    password: false, // Используем "password" как ключ ошибки
     phone: false,
     companyName: false,
+  });
+
+  // Состояние для хранения текстов ошибок
+  const [errorMessages, setErrorMessages] = useState({
+    login: "",
+    password: "",
+    phone: "",
+    companyName: "",
   });
 
   // !!! НОВОЕ СОСТОЯНИЕ: для переключения видимости пароля.
@@ -99,23 +108,63 @@ export default function ClientsSettingsTab() {
     const isPasswordEmpty =
       !data.password_plain || data.password_plain.length === 0;
 
-    const newErrors = {
-      login: data.login_client.length < 3 || data.login_client.length > 20,
+    let loginError = false;
+    let passwordError = false;
+    let phoneError = false;
+    let companyNameError = false;
 
-      // Пароль считается ошибкой, если:
-      // 1. Мы в режиме добавления И он пуст. (Обязателен при добавлении)
-      // 2. Или он не пуст И его длина некорректна. (В обоих режимах)
-      password:
-        (!isEditing && isPasswordEmpty) || // Ошибка: При добавлении пароль обязателен и пуст
-        (!isPasswordEmpty &&
-          (data.password_plain.length < 6 || data.password_plain.length > 20)), // Ошибка: Пароль введен, но не соответствует длине
-
-      phone: !/^\+?[0-9]{10,15}$/.test(data.phone_number_client), // Валидация номера телефона.
-      companyName:
-        data.company_name.length < 2 || data.company_name.length > 50,
+    const newErrorMessages = {
+      login: "",
+      password: "",
+      phone: "",
+      companyName: "",
     };
-    setErrors(newErrors); // Обновляем состояние ошибок.
-    return !Object.values(newErrors).some(Boolean); // Возвращаем `true`, если нет ошибок.
+
+    // 1. Валидация логина
+    if (data.login_client.length < 3 || data.login_client.length > 20) {
+      loginError = true;
+      newErrorMessages.login = "Логин должен быть от 3 до 20 символов";
+    }
+
+    // 2. Валидация пароля
+    if (!isEditing && isPasswordEmpty) {
+      // Ошибка: При добавлении пароль обязателен и пуст
+      passwordError = true;
+      newErrorMessages.password = "Пароль обязателен при добавлении";
+    } else if (
+      !isPasswordEmpty &&
+      (data.password_plain.length < 6 || data.password_plain.length > 20)
+    ) {
+      // Ошибка: Пароль введен, но не соответствует длине
+      passwordError = true;
+      // !!! ИЗМЕНЕНИЕ: Новое сообщение об ошибке длины пароля
+      newErrorMessages.password = "Пароль должен быть от 6 до 20 символов";
+    }
+
+    // 3. Валидация телефона
+    // !!! ИЗМЕНЕНИЕ: Более точная валидация номера телефона и сообщение об ошибке
+    if (!/^\+?[0-9]{10,15}$/.test(data.phone_number_client)) {
+      phoneError = true;
+      newErrorMessages.phone =
+        "Введите корректный номер телефона, например, +79123456789";
+    }
+
+    // 4. Валидация названия организации
+    if (data.company_name.length < 2 || data.company_name.length > 50) {
+      companyNameError = true;
+      newErrorMessages.companyName = "Название должно быть от 2 до 50 символов";
+    }
+
+    setErrors({
+      login: loginError,
+      password: passwordError,
+      phone: phoneError,
+      companyName: companyNameError,
+    }); // Обновляем состояние флагов ошибок.
+
+    setErrorMessages(newErrorMessages); // Обновляем состояние текстов ошибок.
+
+    return !loginError && !passwordError && !phoneError && !companyNameError; // Возвращаем `true`, если нет ошибок.
   };
 
   // Открывает диалог для добавления нового клиента.
@@ -127,6 +176,14 @@ export default function ClientsSettingsTab() {
       phone_number_client: "",
       company_name: "",
     });
+    // Сброс ошибок и сообщений при открытии
+    setErrors({
+      login: false,
+      password: false,
+      phone: false,
+      companyName: false,
+    });
+    setErrorMessages({ login: "", password: "", phone: "", companyName: "" });
     setIsEditing(false); // Устанавливаем режим добавления.
     setOpenDialog(true); // Открываем диалог.
     setShowPassword(false); // Скрываем пароль по умолчанию при открытии.
@@ -134,7 +191,16 @@ export default function ClientsSettingsTab() {
 
   // Открывает диалог для редактирования существующего клиента.
   const handleEditClient = (client: ClientFromServer) => {
-    setEditingClient(client); // Устанавливаем клиента для редактирования.
+    // Устанавливаем клиента для редактирования, включая очистку поля пароля для редактирования
+    setEditingClient({ ...client, password_plain: "" });
+    // Сброс ошибок и сообщений при открытии
+    setErrors({
+      login: false,
+      password: false,
+      phone: false,
+      companyName: false,
+    });
+    setErrorMessages({ login: "", password: "", phone: "", companyName: "" });
     setIsEditing(true); // Устанавливаем режим редактирования.
     setOpenDialog(true); // Открываем диалог.
     setShowPassword(false); // Скрываем пароль по умолчанию при открытии.
@@ -156,7 +222,16 @@ export default function ClientsSettingsTab() {
   // Обработчик сохранения (добавления или обновления) клиента.
   const handleSaveClient = async () => {
     const data = isEditing ? editingClient : newClient; // Определяем, какие данные сохранять.
-    if (!data || !validateInputs(data)) return; // Валидируем данные перед сохранением.
+
+    // В режиме редактирования, если password_plain пустой,
+    // мы временно подставляем валидное значение для прохождения валидации,
+    // так как пароль не обязателен для изменения.
+    const validationData =
+      isEditing && data && data.password_plain === ""
+        ? ({ ...data, password_plain: "dummy_valid_password" } as typeof data)
+        : data;
+
+    if (!data || !validateInputs(validationData)) return; // Валидируем данные перед сохранением.
 
     try {
       if (isEditing && editingClient) {
@@ -165,7 +240,7 @@ export default function ClientsSettingsTab() {
           login: editingClient.login_client,
           phone: editingClient.phone_number_client,
           companyName: editingClient.company_name,
-          // Пароль обновляется только если он был изменен.
+          // Пароль обновляется только если он был введен (не пуст).
           ...(editingClient.password_plain && {
             currentPassword: clients.find((c) => c.id === editingClient.id)!
               .password_plain, // Заглушка, в реальном приложении нужно запросить текущий пароль.
@@ -194,11 +269,23 @@ export default function ClientsSettingsTab() {
     field: keyof Omit<ClientFromServer, "id">,
     value: string
   ) => {
+    // Временно создаем объект для валидации, чтобы получить актуальные ошибки при вводе
+    const currentData =
+      isEditing && editingClient
+        ? { ...editingClient, [field]: value }
+        : { ...newClient, [field]: value };
+
+    // Обновляем состояние
     if (isEditing && editingClient) {
       setEditingClient({ ...editingClient, [field]: value }); // Обновляем данные редактируемого клиента.
     } else {
       setNewClient({ ...newClient, [field]: value }); // Обновляем данные нового клиента.
     }
+
+    // Перевалидируем один раз для обновления helperText
+    // Обертка в setTimeout нужна, чтобы не вызывать validateInputs слишком часто или можно использовать useDebounce
+    // В данном случае, вызовем напрямую.
+    validateInputs(currentData as Omit<ClientFromServer, "id">);
   };
 
   // !!! НОВЫЙ ОБРАБОТЧИК: переключение видимости пароля.
@@ -314,11 +401,8 @@ export default function ClientsSettingsTab() {
                 handleInputChange("company_name", e.target.value)
               }
               error={errors.companyName}
-              helperText={
-                errors.companyName
-                  ? "Название должно быть от 2 до 50 символов"
-                  : ""
-              }
+              // !!! ИЗМЕНЕНИЕ: Используем текст ошибки из состояния
+              helperText={errors.companyName ? errorMessages.companyName : ""}
               margin="normal"
             />
             <TextField
@@ -333,9 +417,8 @@ export default function ClientsSettingsTab() {
                 handleInputChange("phone_number_client", e.target.value)
               }
               error={errors.phone}
-              helperText={
-                errors.phone ? "Введите корректный номер телефона" : ""
-              }
+              // !!! ИЗМЕНЕНИЕ: Используем текст ошибки из состояния
+              helperText={errors.phone ? errorMessages.phone : ""}
               margin="normal"
             />
             <TextField
@@ -350,9 +433,8 @@ export default function ClientsSettingsTab() {
                 handleInputChange("login_client", e.target.value)
               }
               error={errors.login}
-              helperText={
-                errors.login ? "Логин должен быть от 3 до 20 символов" : ""
-              }
+              // !!! ИЗМЕНЕНИЕ: Используем текст ошибки из состояния
+              helperText={errors.login ? errorMessages.login : ""}
               margin="normal"
             />
             <TextField
@@ -372,12 +454,9 @@ export default function ClientsSettingsTab() {
               onChange={(e) =>
                 handleInputChange("password_plain", e.target.value)
               }
-              error={errors.password_plain}
-              helperText={
-                errors.password_plain
-                  ? "Пароль должен быть от 6 до 20 символов"
-                  : ""
-              }
+              error={errors.password} // Используем ключ "password"
+              // !!! ИЗМЕНЕНИЕ: Используем текст ошибки из состояния
+              helperText={errors.password ? errorMessages.password : ""}
               margin="normal"
               // !!! НОВОЕ: Добавление иконки для переключения видимости
               InputProps={{
@@ -404,7 +483,7 @@ export default function ClientsSettingsTab() {
             // Кнопка сохранения отключена, если есть ошибки валидации.
             disabled={
               errors.login ||
-              errors.password || // Пароль теперь валидируется на длину/обязательность в validateInputs
+              errors.password || // Используем ключ "password"
               errors.phone ||
               errors.companyName
             }

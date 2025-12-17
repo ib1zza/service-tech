@@ -464,7 +464,8 @@ export default function HistoryAppealsTab() {
               </Typography>
               <Typography>
                 <strong>Дата закрытия:</strong>{" "}
-                {formatDate(selectedAppeal.date_close!)}
+                {formatDateTime(selectedAppeal.date_close).date}{" "}
+                {formatDateTime(selectedAppeal.date_close).time}
               </Typography>
               <Typography>
                 <strong>Оборудование (механизм):</strong>{" "}
@@ -481,6 +482,10 @@ export default function HistoryAppealsTab() {
               <Typography>
                 <strong>Кто закрыл:</strong>{" "}
                 {selectedAppeal.fio_staff_close_id.fio_staff || "Не указан"}
+              </Typography>
+              <Typography>
+                <strong>Исполнители работ:</strong>{" "}
+                {selectedAppeal.fio_staff || "Не указан"}
               </Typography>
               <Divider sx={{ my: 1 }} />
               <Typography>
