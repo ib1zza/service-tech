@@ -32,6 +32,7 @@ import { clientRouter } from "./routes/client.routes";
 import { staffRouter } from "./routes/staff.routes";
 import { appealRouter } from "./routes/appeal.routes";
 import { infoRouter } from "./routes/info.routes";
+import reportRoutes from "./routes/report.routes";
 
 import swaggerUi from "swagger-ui-express";
 import { setupSwagger } from "./swagger";
@@ -81,6 +82,7 @@ const setupRoutes = (services: ReturnType<typeof initServices>) => {
   app.use("/api/staff", staffRouter(services.staffService));
   app.use("/api/appeals", appealRouter(services.appealService));
   app.use("/api/info", infoRouter(services.poinfoService));
+  app.use("/api/reports", reportRoutes);
 };
 
 setupSwagger(app);

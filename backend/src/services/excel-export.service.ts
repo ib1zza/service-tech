@@ -72,9 +72,7 @@ class ExcelExportService {
       });
 
     // Формирование имени файла
-    const fileName = `${client.company_name}_отчет_${
-      new Date().toISOString().split("T")[0]
-    }.xlsx`;
+    const fileName = `${client.company_name}_report.xlsx`;
     const filePath = path.join(this.reportsDir, fileName);
 
     try {
@@ -121,7 +119,7 @@ class ExcelExportService {
   ): Promise<fs.ReadStream> {
     try {
       // Формирование имени файла
-      const fileName = `${client.company_name}_отчет.xlsx`;
+      const fileName = `${client.company_name}_report.xlsx`;
       const filePath = path.join(this.reportsDir, fileName);
 
       try {

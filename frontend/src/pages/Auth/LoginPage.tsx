@@ -1,6 +1,6 @@
 import { useState } from "react"; // Импорт хука `useState` для управления состоянием компонента
 import { useNavigate } from "react-router-dom"; // Импорт хука `useNavigate` для программной навигации
-import { LockOutlined } from "@mui/icons-material"; // Импорт иконки замка из Material-UI
+import { LockOutlined, Visibility, VisibilityOff } from "@mui/icons-material"; // Импорт иконки замка и иконок для пароля
 import {
   Avatar, // Компонент для отображения аватаров
   Box, // Универсальный контейнер для компоновки
@@ -12,6 +12,8 @@ import {
   Select, // Компонент выпадающего списка
   TextField, // Компонент текстового поля ввода
   Typography, // Компонент для отображения текста
+  IconButton, // Компонент кнопки-иконки
+  InputAdornment, // Компонент для добавления элементов внутрь поля ввода
 } from "@mui/material"; // Импорт компонентов Material-UI
 import { useForm, Controller } from "react-hook-form"; // Импорт хуков и компонентов из React Hook Form для управления формами
 import { yupResolver } from "@hookform/resolvers/yup"; // Интеграция Yup с React Hook Form для валидации
@@ -38,6 +40,8 @@ export default function LoginPage() {
   const navigate = useNavigate(); // Хук для навигации после успешного входа
   const dispatch = useAppDispatch(); // Хук для отправки экшенов в Redux-хранилище
   const [error, setError] = useState(""); // Состояние для отображения сообщений об ошибках входа
+  // !!! НОВОЕ СОСТОЯНИЕ: для переключения видимости пароля.
+  const [showPassword, setShowPassword] = useState(false);
 
   // Инициализация формы с помощью `useForm` из React Hook Form
   const {
@@ -53,6 +57,11 @@ export default function LoginPage() {
       roleType: "client", // По умолчанию выбран тип "Клиент"
     },
   });
+
+  // !!! НОВЫЙ ОБРАБОТЧИК: переключение видимости пароля.
+  const handleClickShowPassword = () => {
+    setShowPassword((prev) => !prev);
+  };
 
   // Асинхронная функция, вызываемая при отправке формы
   const onSubmit = async (data: LoginFormData) => {
@@ -153,10 +162,25 @@ export default function LoginPage() {
                 required
                 fullWidth
                 label="Пароль"
-                type="password" // Скрывает вводимые символы
+                // !!! ИЗМЕНЕНИЕ: тип поля зависит от состояния showPassword
+                type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 error={!!errors.password}
                 helperText={errors.password?.message}
+                // !!! НОВОЕ: Добавление иконки для переключения видимости
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={handleClickShowPassword}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
             )}
           />

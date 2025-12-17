@@ -16,10 +16,16 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
+  InputAdornment, // !!! НОВЫЙ ИМПОРТ: для добавления кнопки в поле ввода
 } from "@mui/material"; // Импорт компонентов Material-UI для построения интерфейса
 import AddIcon from "@mui/icons-material/Add"; // Иконка "Добавить"
+import DownloadIcon from "@mui/icons-material/Download";
+import ArchiveIcon from "@mui/icons-material/Archive";
+
 import EditIcon from "@mui/icons-material/Edit"; // Иконка "Редактировать"
 import DeleteIcon from "@mui/icons-material/Delete"; // Иконка "Удалить"
+import Visibility from "@mui/icons-material/Visibility"; // !!! НОВЫЙ ИМПОРТ: Иконка "Показать пароль"
+import VisibilityOff from "@mui/icons-material/VisibilityOff"; // !!! НОВЫЙ ИМПОРТ: Иконка "Скрыть пароль"
 import { clientApi, ClientFromServer } from "../../../../services/requests"; // Импорт API для взаимодействия с клиентами и типа данных клиента
 
 // Компонент ClientsSettingsTab позволяет администратору управлять списком клиентов: просматривать, добавлять, редактировать и удалять.
@@ -30,6 +36,7 @@ export default function ClientsSettingsTab() {
   const [editingClient, setEditingClient] = useState<ClientFromServer | null>(
     null
   );
+  console.log(editingClient);
   // Состояние для данных нового клиента, который будет добавлен.
   const [newClient, setNewClient] = useState<Omit<ClientFromServer, "id">>({
     login_client: "",
@@ -37,6 +44,21 @@ export default function ClientsSettingsTab() {
     phone_number_client: "",
     company_name: "",
   });
+  const handleDownloadReport = (companyName: string) => {
+    const filename = `${companyName}_report.xlsx`;
+
+    // Открываем файл в новой вкладке → браузер сам скачает
+    try {
+      window.open(`/api/reports/${encodeURIComponent(filename)}`, "_blank");
+    } catch {
+      alert("Отчёт для этой компании ещё не сформирован");
+    }
+  };
+
+  const handleDownloadAllReports = () => {
+    window.open("/api/reports/all", "_blank");
+  };
+
   // Состояние для управления видимостью диалогового окна добавления/редактирования.
   const [openDialog, setOpenDialog] = useState(false);
   // Флаг, указывающий, находится ли диалог в режиме редактирования (true) или добавления (false).
@@ -46,10 +68,13 @@ export default function ClientsSettingsTab() {
   // Состояние для хранения ошибок валидации полей формы.
   const [errors, setErrors] = useState({
     login: false,
-    password: false,
+    password_plain: false,
     phone: false,
     companyName: false,
   });
+
+  // !!! НОВОЕ СОСТОЯНИЕ: для переключения видимости пароля.
+  const [showPassword, setShowPassword] = useState(false);
 
   // Хук `useEffect` для загрузки списка клиентов при первом монтировании компонента.
   useEffect(() => {
@@ -71,13 +96,20 @@ export default function ClientsSettingsTab() {
 
   // Функция для валидации полей формы клиента.
   const validateInputs = (data: Omit<ClientFromServer, "id">) => {
+    const isPasswordEmpty =
+      !data.password_plain || data.password_plain.length === 0;
+
     const newErrors = {
       login: data.login_client.length < 3 || data.login_client.length > 20,
-      // Пароль валидируется только при создании или если он изменен в режиме редактирования.
+
+      // Пароль считается ошибкой, если:
+      // 1. Мы в режиме добавления И он пуст. (Обязателен при добавлении)
+      // 2. Или он не пуст И его длина некорректна. (В обоих режимах)
       password:
-        !isEditing &&
-        !!data.password &&
-        (data.password.length < 6 || data.password.length > 20),
+        (!isEditing && isPasswordEmpty) || // Ошибка: При добавлении пароль обязателен и пуст
+        (!isPasswordEmpty &&
+          (data.password_plain.length < 6 || data.password_plain.length > 20)), // Ошибка: Пароль введен, но не соответствует длине
+
       phone: !/^\+?[0-9]{10,15}$/.test(data.phone_number_client), // Валидация номера телефона.
       companyName:
         data.company_name.length < 2 || data.company_name.length > 50,
@@ -91,12 +123,13 @@ export default function ClientsSettingsTab() {
     setNewClient({
       // Сбрасываем данные нового клиента.
       login_client: "",
-      password: "",
+      password_plain: "",
       phone_number_client: "",
       company_name: "",
     });
     setIsEditing(false); // Устанавливаем режим добавления.
     setOpenDialog(true); // Открываем диалог.
+    setShowPassword(false); // Скрываем пароль по умолчанию при открытии.
   };
 
   // Открывает диалог для редактирования существующего клиента.
@@ -104,6 +137,7 @@ export default function ClientsSettingsTab() {
     setEditingClient(client); // Устанавливаем клиента для редактирования.
     setIsEditing(true); // Устанавливаем режим редактирования.
     setOpenDialog(true); // Открываем диалог.
+    setShowPassword(false); // Скрываем пароль по умолчанию при открытии.
   };
 
   // Обработчик удаления клиента.
@@ -132,22 +166,24 @@ export default function ClientsSettingsTab() {
           phone: editingClient.phone_number_client,
           companyName: editingClient.company_name,
           // Пароль обновляется только если он был изменен.
-          ...(editingClient.password && {
-            currentPassword: "current-password-placeholder", // Заглушка, в реальном приложении нужно запросить текущий пароль.
-            newPassword: editingClient.password,
+          ...(editingClient.password_plain && {
+            currentPassword: clients.find((c) => c.id === editingClient.id)!
+              .password_plain, // Заглушка, в реальном приложении нужно запросить текущий пароль.
+            newPassword: editingClient.password_plain,
           }),
         });
       } else {
         // Если режим добавления, создаем нового клиента.
         await clientApi.createClient({
           login: newClient.login_client,
-          password: newClient.password!, // Пароль обязателен при создании.
+          password: newClient.password_plain!, // Пароль обязателен при создании.
           phone: newClient.phone_number_client,
           companyName: newClient.company_name,
         });
       }
       fetchClients(); // Обновляем список клиентов.
       setOpenDialog(false); // Закрываем диалог.
+      setShowPassword(false); // Скрываем пароль после сохранения
     } catch (error) {
       console.error("Ошибка при сохранении клиента:", error);
     }
@@ -165,10 +201,32 @@ export default function ClientsSettingsTab() {
     }
   };
 
+  // !!! НОВЫЙ ОБРАБОТЧИК: переключение видимости пароля.
+  const handleClickShowPassword = () => {
+    setShowPassword((prev) => !prev);
+  };
+
   return (
     <Box>
       {/* Кнопка "Добавить клиента" */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          mb: 2,
+        }}
+      >
+        {/* Скачать все отчёты */}
+        <Button
+          variant="outlined"
+          color="primary"
+          startIcon={<ArchiveIcon />}
+          onClick={handleDownloadAllReports}
+        >
+          Скачать все отчёты
+        </Button>
+
+        {/* Добавить клиента */}
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -202,15 +260,23 @@ export default function ClientsSettingsTab() {
                   <TableCell>{client.login_client}</TableCell>
                   <TableCell>{client.phone_number_client}</TableCell>
                   <TableCell>
-                    {/* Кнопки редактирования и удаления клиента. */}
                     <IconButton onClick={() => handleEditClient(client)}>
                       <EditIcon />
                     </IconButton>
+
                     <IconButton
                       onClick={() => handleDeleteClient(client.id)}
                       color="error"
                     >
                       <DeleteIcon />
+                    </IconButton>
+
+                    <IconButton
+                      color="primary"
+                      title="Скачать отчёт"
+                      onClick={() => handleDownloadReport(client.company_name)}
+                    >
+                      <DownloadIcon />
                     </IconButton>
                   </TableCell>
                 </TableRow>
@@ -223,7 +289,10 @@ export default function ClientsSettingsTab() {
       {/* Диалоговое окно для добавления или редактирования клиента. */}
       <Dialog
         open={openDialog}
-        onClose={() => setOpenDialog(false)}
+        onClose={() => {
+          setOpenDialog(false);
+          setShowPassword(false);
+        }} // Скрываем пароль при закрытии
         maxWidth="sm"
         fullWidth
       >
@@ -291,18 +360,39 @@ export default function ClientsSettingsTab() {
               label={
                 isEditing
                   ? "Новый пароль (оставьте пустым, чтобы не менять)"
-                  : "Пароль"
+                  : "Пароль (6-20 символов)" // Добавлена подсказка длины
               }
-              type="password"
+              // !!! ИЗМЕНЕНИЕ: тип поля зависит от состояния showPassword
+              type={showPassword ? "text" : "password"}
               value={
-                isEditing ? editingClient?.password || "" : newClient.password
+                isEditing
+                  ? editingClient?.password_plain || ""
+                  : newClient.password_plain
               }
-              onChange={(e) => handleInputChange("password", e.target.value)}
-              error={errors.password}
+              onChange={(e) =>
+                handleInputChange("password_plain", e.target.value)
+              }
+              error={errors.password_plain}
               helperText={
-                errors.password ? "Пароль должен быть от 6 до 20 символов" : ""
+                errors.password_plain
+                  ? "Пароль должен быть от 6 до 20 символов"
+                  : ""
               }
               margin="normal"
+              // !!! НОВОЕ: Добавление иконки для переключения видимости
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle password visibility"
+                      onClick={handleClickShowPassword}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
           </Box>
         </DialogContent>
@@ -314,7 +404,7 @@ export default function ClientsSettingsTab() {
             // Кнопка сохранения отключена, если есть ошибки валидации.
             disabled={
               errors.login ||
-              (!isEditing && errors.password) || // Пароль обязателен только при создании.
+              errors.password || // Пароль теперь валидируется на длину/обязательность в validateInputs
               errors.phone ||
               errors.companyName
             }
