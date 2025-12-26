@@ -398,18 +398,20 @@ export default function HistoryAppealsTab() {
             <TableBody>
               {/* Отображение строк таблицы с данными заявок */}
               {filteredAndSortedAppeals.map((appeal) => {
-                const { date, time } = formatDateTime(appeal.date_start);
-
+                const dateStart = formatDateTime(appeal.date_start);
+                const dateClose = formatDateTime(appeal.date_close!);
                 return (
                   <TableRow key={appeal.id} hover>
                     <TableCell>{appeal.company_name_id.company_name}</TableCell>
                     <TableCell>
                       {appeal.id}
                       <Typography variant="body2" color="text.secondary">
-                        {date} {time}
+                        {dateStart.date} {dateStart.time}
                       </Typography>
                     </TableCell>
-                    <TableCell>{formatDate(appeal.date_close!)}</TableCell>
+                    <TableCell>
+                      {dateClose.date} {dateClose.time}
+                    </TableCell>
                     <TableCell>{appeal.mechanism}</TableCell>
                     <TableCell>
                       <Button

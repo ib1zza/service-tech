@@ -44,6 +44,7 @@ class ExcelExportService {
       { header: "ID", key: "id", width: 10 },
       { header: "Дата создания", key: "date_start", width: 20 },
       { header: "Дата закрытия", key: "date_close", width: 20 },
+      { header: "Кто сообщил", key: "client", width: 30 },
       { header: "Оборудование", key: "mechanism", width: 25 },
       { header: "Описание проблемы", key: "problem", width: 40 },
       { header: "Статус", key: "status", width: 15 },
@@ -59,8 +60,20 @@ class ExcelExportService {
       .forEach((appeal) => {
         worksheet.addRow({
           id: appeal.id,
-          date_start: appeal.date_start,
-          date_close: appeal.date_close,
+          date_start: appeal.date_start.toLocaleDateString("ru-RU", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          date_close: appeal.date_close.toLocaleDateString("ru-RU", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
           mechanism: appeal.mechanism,
           problem: appeal.problem,
           status: appeal.status?.st,
@@ -68,12 +81,15 @@ class ExcelExportService {
           staff_close: appeal.fio_staff_close_id?.fio_staff,
           fio_staff: appeal.fio_staff,
           description: appeal.appeal_desc,
+          client: appeal.fio_client,
         });
       });
 
     // Формирование имени файла
     const fileName = `${client.company_name}_report.xlsx`;
     const filePath = path.join(this.reportsDir, fileName);
+
+    console.log(`Создан отчет: ${filePath}`, fileName);
 
     try {
       await workbook.xlsx.writeFile(filePath);

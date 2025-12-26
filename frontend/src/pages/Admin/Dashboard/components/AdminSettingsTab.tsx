@@ -1,247 +1,320 @@
-import { useState, useEffect } from 'react'; // Импорт хуков React: useState для управления состоянием компонента, useEffect для выполнения побочных эффектов
+import { useState, useEffect } from "react";
 import {
-    Box,
-    Button,
-    TextField,
-    Typography,
-    Paper,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    CircularProgress
-} from '@mui/material'; // Импорт компонентов Material-UI для построения интерфейса
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
+} from "@mui/material";
 
-import SaveIcon from '@mui/icons-material/Save'; // Иконка сохранения
-import EditIcon from '@mui/icons-material/Edit'; // Иконка редактирования
-import {adminApi, infoApi, UpdateCredentialsData} from "../../../../services/requests"; // Импорт API-сервисов для взаимодействия с бэкендом
+import SaveIcon from "@mui/icons-material/Save";
+import EditIcon from "@mui/icons-material/Edit";
+import {
+  adminApi,
+  infoApi,
+  UpdateCredentialsData,
+} from "../../../../services/requests";
+import { useAuth } from "../../../../hooks/useAuth";
 
-// Компонент AdminSettingsTab предоставляет интерфейс для настройки администраторских данных и информации "О программе"
 export default function AdminSettingsTab() {
-    // Состояние для полей формы обновления учетных данных администратора
-    const [formData, setFormData] = useState({
-        newLogin: '',
-        newPassword: '',
-        newPhone: '',
+  const { user } = useAuth();
+
+  // Добавляем пароль в локальное состояние отображения
+  const [adminInfo, setAdminInfo] = useState({
+    login: "",
+    phone: "",
+    password: "",
+  });
+
+  const [adminEditData, setAdminEditData] = useState({
+    newLogin: "",
+    newPassword: "",
+    newPhone: "",
+  });
+
+  const [aboutInfo, setAboutInfo] = useState<string>("");
+  const [editAboutInfo, setEditAboutInfo] = useState<string>("");
+
+  const [openAdminModal, setOpenAdminModal] = useState<boolean>(false);
+  const [openAboutModal, setOpenAboutModal] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const [errors, setErrors] = useState({
+    login: false,
+    password: false,
+    phone: false,
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const aboutRes = await infoApi.getAboutInfo();
+        setAboutInfo(aboutRes);
+
+        // Инициализируем данные из user (включая пароль)
+        if (user) {
+          setAdminInfo({
+            login: user.login_admin,
+            phone: user.phone_number_admin,
+            password: user.password_plain, // Используем поле из вашего запроса
+          });
+        }
+      } catch (error) {
+        console.error("Ошибка при загрузке данных:", error);
+      }
+    };
+
+    fetchData();
+  }, [user]);
+
+  const handleAdminChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setAdminEditData((prev) => ({ ...prev, [name]: value }));
+
+    // Валидация
+    if (name === "newLogin") {
+      setErrors((prev) => ({
+        ...prev,
+        login: value.length > 0 && (value.length < 2 || value.length > 10),
+      }));
+    }
+    if (name === "newPassword") {
+      setErrors((prev) => ({
+        ...prev,
+        password: value.length > 0 && (value.length < 2 || value.length > 10),
+      }));
+    }
+    if (name === "newPhone") {
+      setErrors((prev) => ({
+        ...prev,
+        phone: value.length > 0 && !/^\+79\d{9}$/.test(value),
+      }));
+    }
+  };
+
+  // ОТКРЫТИЕ МОДАЛКИ: теперь подставляем и пароль тоже
+  const handleOpenAdminModal = () => {
+    setAdminEditData({
+      newLogin: adminInfo.login,
+      newPhone: adminInfo.phone,
+      newPassword: adminInfo.password, // Теперь пароль подставляется сюда
     });
+    setErrors({ login: false, password: false, phone: false });
+    setOpenAdminModal(true);
+  };
 
-    // Состояние для хранения текста информации "О программе" (отображаемого)
-    const [aboutInfo, setAboutInfo] = useState<string>('');
-    // Состояние для текста информации "О программе" в режиме редактирования (в модальном окне)
-    const [editAboutInfo, setEditAboutInfo] = useState<string>('');
-    // Состояние для управления видимостью модального окна редактирования
-    const [openModal, setOpenModal] = useState<boolean>(false);
-    // Состояние для индикатора загрузки при сохранении информации "О программе"
-    const [loading, setLoading] = useState<boolean>(false);
+  const handleSaveAdminData = async () => {
+    if (errors.login || errors.password || errors.phone) return;
 
-    // Состояние для отслеживания ошибок валидации полей формы
-    const [errors, setErrors] = useState({
-        login: false,
-        password: false,
-        phone: false
-    });
+    setLoading(true);
+    try {
+      const updateData: UpdateCredentialsData = {};
 
-    // Хук useEffect для загрузки информации "О программе" при первом рендере компонента
-    useEffect(() => {
-        const fetchAboutInfo = async () => {
-            try {
-                // Выполняем запрос к API для получения информации
-                const response = await infoApi.getAboutInfo();
-                setAboutInfo(response); // Обновляем состояние с полученной информацией
-            } catch (error) {
-                console.error('Ошибка при загрузке информации:', error);
+      // Отправляем данные, только если они изменились
+      if (adminEditData.newLogin !== adminInfo.login)
+        updateData.newLogin = adminEditData.newLogin;
+      if (adminEditData.newPhone !== adminInfo.phone)
+        updateData.newPhone = adminEditData.newPhone;
+      if (adminEditData.newPassword !== adminInfo.password)
+        updateData.newPassword = adminEditData.newPassword;
+
+      // Если ничего не изменилось, просто закрываем
+      if (Object.keys(updateData).length === 0) {
+        setOpenAdminModal(false);
+        return;
+      }
+
+      await adminApi.updateCredentials(updateData);
+
+      setAdminInfo({
+        login: adminEditData.newLogin,
+        phone: adminEditData.newPhone,
+        password: adminEditData.newPassword,
+      });
+
+      setOpenAdminModal(false);
+      alert("Данные администратора успешно обновлены");
+    } catch (error) {
+      console.error("Ошибка при обновлении данных:", error);
+      alert("Не удалось обновить данные");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenAboutModal = () => {
+    setEditAboutInfo(aboutInfo);
+    setOpenAboutModal(true);
+  };
+
+  const handleSaveAboutInfo = async () => {
+    setLoading(true);
+    try {
+      const response = await infoApi.updateAboutInfo(editAboutInfo);
+      setAboutInfo(response);
+      setOpenAboutModal(false);
+    } catch (error) {
+      alert("Не удалось сохранить изменения");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Box sx={{ maxWidth: 600, mt: 2 }}>
+      <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Настройки администратора
+        </Typography>
+        <List sx={{ mb: 2 }}>
+          <ListItem disableGutters>
+            <ListItemText
+              primary="Логин"
+              secondary={adminInfo.login || "Не задан"}
+            />
+          </ListItem>
+          <Divider />
+          <ListItem disableGutters>
+            <ListItemText
+              primary="Телефон Telegram"
+              secondary={adminInfo.phone || "Не задан"}
+            />
+          </ListItem>
+          <Divider />
+          <ListItem disableGutters>
+            <ListItemText
+              primary="Пароль"
+              secondary={adminInfo.password ? "********" : "Не задан"}
+            />
+          </ListItem>
+        </List>
+        <Button
+          variant="outlined"
+          startIcon={<EditIcon />}
+          onClick={handleOpenAdminModal}
+        >
+          Изменить данные
+        </Button>
+      </Paper>
+
+      {/* О программе - без изменений */}
+      <Paper elevation={3} sx={{ p: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Информация "О программе"
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{ mb: 2, whiteSpace: "pre-wrap", color: "text.secondary" }}
+        >
+          {aboutInfo || "Информация не заполнена"}
+        </Typography>
+        <Button
+          variant="outlined"
+          startIcon={<EditIcon />}
+          onClick={handleOpenAboutModal}
+        >
+          Редактировать текст
+        </Button>
+      </Paper>
+
+      <Dialog
+        open={openAdminModal}
+        onClose={() => !loading && setOpenAdminModal(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Редактирование администратора</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="Новый логин"
+            name="newLogin"
+            value={adminEditData.newLogin}
+            onChange={handleAdminChange}
+            error={errors.login}
+            helperText={errors.login ? "От 2 до 10 символов" : ""}
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Новый телефон (+79XXXXXXXXX)"
+            name="newPhone"
+            value={adminEditData.newPhone}
+            onChange={handleAdminChange}
+            error={errors.phone}
+            helperText={errors.phone ? "Формат: +79XXXXXXXXX" : ""}
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Пароль"
+            name="newPassword"
+            // type="password" // Уберите это, если хотите чтобы пароль был виден текстом
+            value={adminEditData.newPassword}
+            onChange={handleAdminChange}
+            error={errors.password}
+            helperText={errors.password ? "От 2 до 10 символов" : ""}
+            margin="normal"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenAdminModal(false)} disabled={loading}>
+            Отмена
+          </Button>
+          <Button
+            onClick={handleSaveAdminData}
+            variant="contained"
+            disabled={
+              loading || errors.login || errors.phone || errors.password
             }
-        };
+            startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
+          >
+            Сохранить
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-        fetchAboutInfo(); // Вызываем функцию загрузки
-    }, []); // Пустой массив зависимостей означает, что эффект выполнится только один раз
-
-    // Обработчик изменения значений в полях формы
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value })); // Обновляем данные формы
-
-        // Выполняем валидацию полей и обновляем состояние ошибок
-        if (name === 'newLogin') {
-            setErrors(prev => ({ ...prev, login: value.length < 2 || value.length > 10 }));
-        }
-        if (name === 'newPassword') {
-            setErrors(prev => ({ ...prev, password: value.length < 2 || value.length > 10 }));
-        }
-        if (name === 'newPhone') {
-            setErrors(prev => ({ ...prev, phone: !/^\+79\d{9}$/.test(value) })); // Валидация номера телефона по регулярному выражению
-        }
-    };
-
-    // Обработчик отправки формы обновления учетных данных
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault(); // Предотвращаем стандартное поведение отправки формы
-
-        // Если есть ошибки валидации, прерываем отправку
-        if (errors.login || errors.password || errors.phone) {
-            return;
-        }
-
-        try {
-            // Создаем объект с данными для обновления, включая только заполненные поля
-            const updateData: UpdateCredentialsData = {};
-            if (formData.newLogin) updateData.newLogin = formData.newLogin;
-            if (formData.newPassword) updateData.newPassword = formData.newPassword;
-            if (formData.newPhone) updateData.newPhone = formData.newPhone;
-
-            // Выполняем запрос к API для обновления учетных данных
-            await adminApi.updateCredentials(updateData);
-
-            // Очищаем поля логина и пароля после успешного обновления
-            setFormData(prev => ({
-                ...prev,
-                newLogin: '',
-                newPassword: '',
-            }));
-
-            alert('Данные успешно обновлены'); // Сообщаем об успехе
-        } catch (error) {
-            console.error('Ошибка при обновлении данных:', error);
-            alert('Произошла ошибка при обновлении данных'); // Сообщаем об ошибке
-        }
-    };
-
-    // Открывает модальное окно для редактирования информации "О программе"
-    const handleOpenModal = () => {
-        setEditAboutInfo(aboutInfo); // Инициализируем текст в модальном окне текущей информацией
-        setOpenModal(true);
-    };
-
-    // Закрывает модальное окно
-    const handleCloseModal = () => {
-        setOpenModal(false);
-    };
-
-    // Обработчик сохранения измененной информации "О программе"
-    const handleSaveAboutInfo = async () => {
-        setLoading(true); // Включаем индикатор загрузки
-        try {
-            // Отправляем обновленную информацию на сервер
-            const response = await infoApi.updateAboutInfo(editAboutInfo);
-            setAboutInfo(response); // Обновляем отображаемую информацию
-            handleCloseModal(); // Закрываем модальное окно
-        } catch (error) {
-            console.error('Ошибка при сохранении информации:', error);
-            alert('Не удалось сохранить изменения'); // Сообщаем об ошибке
-        } finally {
-            setLoading(false); // Выключаем индикатор загрузки
-        }
-    };
-
-    return (
-        <Box sx={{ maxWidth: 500 }}> {/* Основной контейнер страницы настроек */}
-            {/* Секция для настроек учетных данных администратора */}
-            <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Настройки администратора
-                </Typography>
-
-                {/* Поле для нового логина */}
-                <TextField
-                    fullWidth
-                    label="Новый логин администратора (2-10 символов)"
-                    name="newLogin"
-                    value={formData.newLogin}
-                    onChange={handleChange}
-                    error={errors.login} // Указываем, есть ли ошибка валидации
-                    helperText={errors.login ? "Логин должен быть от 2 до 10 символов" : ""} // Текст ошибки
-                    margin="normal"
-                />
-
-                {/* Поле для нового пароля */}
-                <TextField
-                    fullWidth
-                    label="Новый пароль администратора (2-10 символов)"
-                    name="newPassword"
-                    type="password" // Тип поля для скрытия вводимых символов
-                    value={formData.newPassword}
-                    onChange={handleChange}
-                    error={errors.password}
-                    helperText={errors.password ? "Пароль должен быть от 2 до 10 символов" : ""}
-                    margin="normal"
-                />
-
-                {/* Поле для нового номера телефона Telegram */}
-                <TextField
-                    fullWidth
-                    label="Номер телефона для Telegram (+79XXXXXXXXX)"
-                    name="newPhone"
-                    value={formData.newPhone}
-                    onChange={handleChange}
-                    error={errors.phone}
-                    helperText={errors.phone ? "Введите номер в формате +79XXXXXXXXX" : ""}
-                    margin="normal"
-                />
-
-                {/* Кнопка сохранения изменений учетных данных */}
-                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        startIcon={<SaveIcon />}
-                        disabled={errors.login || errors.password || errors.phone} // Кнопка отключена, если есть ошибки валидации
-                        onClick={handleSubmit}
-                    >
-                        Сохранить изменения
-                    </Button>
-                </Box>
-            </Paper>
-
-            {/* Секция для информации "О программе" */}
-            <Paper elevation={3} sx={{ p: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Информация "О программе"
-                </Typography>
-
-                <Box sx={{ mb: 2 }}>
-                    <Typography variant="body1" paragraph>
-                        {aboutInfo || 'Информация о программе не загружена'} {/* Отображаем загруженную информацию или сообщение */}
-                    </Typography>
-                </Box>
-
-                {/* Кнопка для открытия модального окна редактирования */}
-                <Button
-                    variant="outlined"
-                    startIcon={<EditIcon />}
-                    onClick={handleOpenModal}
-                >
-                    Редактировать информацию
-                </Button>
-            </Paper>
-
-            {/* Модальное окно для редактирования информации "О программе" */}
-            <Dialog open={openModal} onClose={handleCloseModal} maxWidth="md" fullWidth>
-                <DialogTitle>Редактирование информации "О программе"</DialogTitle>
-                <DialogContent>
-                    {/* Многострочное текстовое поле для редактирования информации */}
-                    <TextField
-                        fullWidth
-                        multiline
-                        rows={10}
-                        variant="outlined"
-                        value={editAboutInfo}
-                        onChange={(e) => setEditAboutInfo(e.target.value)}
-                        sx={{ mt: 2 }}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseModal}>Отмена</Button>
-                    {/* Кнопка сохранения в модальном окне с индикатором загрузки */}
-                    <Button
-                        onClick={handleSaveAboutInfo}
-                        variant="contained"
-                        disabled={loading} // Кнопка отключена во время загрузки
-                        startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />} // Иконка загрузки или сохранения
-                    >
-                        Сохранить
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </Box>
-    );
+      {/* О программе Dialog - без изменений */}
+      <Dialog
+        open={openAboutModal}
+        onClose={() => !loading && setOpenAboutModal(false)}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>Редактирование информации</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            multiline
+            rows={8}
+            value={editAboutInfo}
+            onChange={(e) => setEditAboutInfo(e.target.value)}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenAboutModal(false)} disabled={loading}>
+            Отмена
+          </Button>
+          <Button
+            onClick={handleSaveAboutInfo}
+            variant="contained"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
+          >
+            Сохранить
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
 }

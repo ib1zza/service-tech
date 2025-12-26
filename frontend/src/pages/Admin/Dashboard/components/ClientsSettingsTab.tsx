@@ -333,10 +333,21 @@ export default function ClientsSettingsTab() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Название организации</TableCell>
-                <TableCell>Логин</TableCell>
-                <TableCell>Телефон</TableCell>
-                <TableCell>Действия</TableCell>
+                <TableCell style={{ fontWeight: "bold", fontSize: "16px" }}>
+                  Название организации
+                </TableCell>
+                <TableCell style={{ fontWeight: "bold", fontSize: "16px" }}>
+                  Логин
+                </TableCell>
+                <TableCell style={{ fontWeight: "bold", fontSize: "16px" }}>
+                  Пароль
+                </TableCell>
+                <TableCell style={{ fontWeight: "bold", fontSize: "16px" }}>
+                  Телефон
+                </TableCell>
+                <TableCell style={{ fontWeight: "bold", fontSize: "16px" }}>
+                  Действия
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -345,6 +356,7 @@ export default function ClientsSettingsTab() {
                 <TableRow key={client.id}>
                   <TableCell>{client.company_name}</TableCell>
                   <TableCell>{client.login_client}</TableCell>
+                  <TableCell>••••••••</TableCell> {/* Пароль скрыт */}
                   <TableCell>{client.phone_number_client}</TableCell>
                   <TableCell>
                     <IconButton onClick={() => handleEditClient(client)}>

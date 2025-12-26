@@ -187,10 +187,18 @@ export default function EmployeesSettingsTab() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Фамилия И. О.</TableCell>
-                <TableCell>Логин</TableCell>
-                <TableCell>Пароль</TableCell>
-                <TableCell>Действия</TableCell>
+                <TableCell style={{ fontWeight: "bold", fontSize: "16px" }}>
+                  Фамилия И. О.
+                </TableCell>
+                <TableCell style={{ fontWeight: "bold", fontSize: "16px" }}>
+                  Логин
+                </TableCell>
+                <TableCell style={{ fontWeight: "bold", fontSize: "16px" }}>
+                  Пароль
+                </TableCell>
+                <TableCell style={{ fontWeight: "bold", fontSize: "16px" }}>
+                  Действия
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
