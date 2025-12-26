@@ -46,13 +46,17 @@ class ExcelExportService {
       { header: "Дата закрытия", key: "date_close", width: 20 },
       { header: "Кто сообщил", key: "client", width: 30 },
       { header: "Оборудование", key: "mechanism", width: 25 },
-      { header: "Описание проблемы", key: "problem", width: 40 },
+      { header: "Описание неисправности", key: "problem", width: 40 },
       { header: "Статус", key: "status", width: 15 },
       { header: "Принял заявку", key: "staff_open", width: 30 },
       { header: "Закрыл заявку", key: "staff_close", width: 30 },
       { header: "Исполнитель", key: "fio_staff", width: 30 },
       { header: "Выполненные работы", key: "description", width: 50 },
     ];
+
+    worksheet.columns.forEach((column) => {
+      column.alignment = { horizontal: "left", vertical: "middle" };
+    });
 
     // Добавление данных в отчет
     [...appeals]

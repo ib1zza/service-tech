@@ -387,6 +387,7 @@ export default function HistoryAppealsTab() {
               {/* Отображение строк таблицы с данными заявок */}
               {filteredAndSortedAppeals.map((appeal) => {
                 const { date, time } = formatDateTime(appeal.date_start); // Форматирование даты и времени начала заявки.
+                const dateClose = formatDateTime(appeal.date_close!);
 
                 return (
                   <TableRow key={appeal.id} hover>
@@ -397,7 +398,9 @@ export default function HistoryAppealsTab() {
                         {date} {time}
                       </Typography>
                     </TableCell>
-                    <TableCell>{formatDate(appeal.date_close!)}</TableCell>
+                    <TableCell>
+                      {dateClose.date} {dateClose.time}
+                    </TableCell>
                     <TableCell>{appeal.mechanism}</TableCell>
                     <TableCell>
                       <Button
