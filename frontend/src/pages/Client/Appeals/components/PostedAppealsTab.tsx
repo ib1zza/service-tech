@@ -7,78 +7,99 @@ import {
   Divider,
   CircularProgress,
   Alert,
-} from "@mui/material"; // Импорт компонентов Material-UI для построения пользовательского интерфейса
-import CancelIcon from "@mui/icons-material/Cancel"; // Импорт иконки "Отмена"
-import { useEffect, useState } from "react"; // Импорт хуков React для управления состоянием и выполнения побочных эффектов
-import { Appeal, appealApi } from "../../../../services/requests"; // Импорт API для работы с заявками и типа данных для заявок
-import { useAppSelector } from "../../../../store/hooks"; // Импорт пользовательского хука для доступа к Redux-хранилищу
+  // Добавленные импорты для диалога
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+} from "@mui/material";
+import CancelIcon from "@mui/icons-material/Cancel";
+import { useEffect, useState } from "react";
+import { Appeal, appealApi } from "../../../../services/requests";
+import { useAppSelector } from "../../../../store/hooks";
 
-// Компонент `PostedAppealsTab` отображает список **новых (размещенных)** заявок текущего клиента
-// и позволяет отменить заявки, если они еще не приняты в работу.
 export default function PostedAppealsTab() {
-  // Состояние для хранения списка размещенных заявок.
   const [appeals, setAppeals] = useState<Appeal[]>([]);
-  // Состояние для отслеживания статуса загрузки данных.
   const [loading, setLoading] = useState(true);
-  // Состояние для хранения сообщений об ошибках, если загрузка не удалась.
   const [error, setError] = useState<string | null>(null);
-  // Получение данных текущего пользователя из Redux-хранилища для фильтрации заявок по компании.
   const { user } = useAppSelector((state) => state.auth);
 
-  // Асинхронная функция для отмены заявки.
-  const handleCancelAppeal = async (appealId: number) => {
-    // Запрашиваем подтверждение у пользователя перед отменой.
-    if (!window.confirm("Вы уверены, что хотите отменить эту заявку?")) {
+  // --- Состояния для управления диалогом отмены ---
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedAppealId, setSelectedAppealId] = useState<number | null>(null);
+  const [initiatorName, setInitiatorName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Функция открытия диалога
+  const handleOpenCancelDialog = (appealId: number) => {
+    setSelectedAppealId(appealId);
+    setIsDialogOpen(true);
+  };
+
+  // Функция закрытия диалога
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setSelectedAppealId(null);
+    setInitiatorName("");
+  };
+
+  // Логика подтверждения отмены
+  const handleConfirmCancel = async () => {
+    if (!selectedAppealId) return;
+    if (!initiatorName.trim()) {
+      alert("Пожалуйста, введите фамилию и инициалы инициатора");
       return;
     }
+
     try {
-      await appealApi.cancelAppeal(appealId); // Отправляем запрос на отмену заявки через API.
-      // Обновляем UI, удаляя отмененную заявку из списка.
-      setAppeals(appeals.filter((appeal) => appeal.id !== appealId));
-      alert("Заявка успешно отменена"); // Уведомление об успешной отмене.
+      setIsSubmitting(true);
+      // Вызов API с передачей ID и имени инициатора
+      await appealApi.cancelAppeal(selectedAppealId, initiatorName);
+
+      setAppeals(appeals.filter((appeal) => appeal.id !== selectedAppealId));
+      alert("Заявка успешно отменена");
+      handleCloseDialog();
     } catch (err) {
       console.error("Error canceling appeal:", err);
-      alert("Не удалось отменить заявку"); // Уведомление об ошибке.
+      alert("Не удалось отменить заявку");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Вспомогательная функция для форматирования даты и времени в удобный для отображения формат.
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     return {
-      date: date.toLocaleDateString("ru-RU"), // Форматирование даты
+      date: date.toLocaleDateString("ru-RU"),
       time: date.toLocaleTimeString("ru-RU", {
         hour: "2-digit",
         minute: "2-digit",
-      }), // Форматирование времени
+      }),
     };
   };
 
-  // Хук `useEffect` для загрузки размещенных заявок при монтировании компонента
-  // или при изменении названия компании текущего пользователя.
   useEffect(() => {
     const fetchAppeals = async () => {
       try {
-        setLoading(true); // Устанавливаем состояние загрузки.
-        const data = await appealApi.getNewAppeals(); // Получаем все новые заявки.
-        // Фильтруем заявки, чтобы отобразить только те, что относятся к текущей компании пользователя.
+        setLoading(true);
+        const data = await appealApi.getNewAppeals();
         const userAppeals = data.filter(
           (appeal) => appeal.company_name_id.company_name === user?.company_name
         );
-        setAppeals(userAppeals); // Обновляем состояние списка заявок.
-        setError(null); // Сбрасываем сообщение об ошибке.
+        setAppeals(userAppeals);
+        setError(null);
       } catch (err) {
         console.error("Error fetching appeals:", err);
-        setError("Не удалось загрузить заявки"); // Устанавливаем сообщение об ошибке.
+        setError("Не удалось загрузить заявки");
       } finally {
-        setLoading(false); // Снимаем состояние загрузки.
+        setLoading(false);
       }
     };
 
-    fetchAppeals(); // Вызываем функцию загрузки данных.
-  }, [user?.company_name]); // Зависимость от `user?.company_name` для перезагрузки данных при смене пользователя.
+    fetchAppeals();
+  }, [user?.company_name]);
 
-  // Условный рендеринг: отображение индикатора загрузки, пока данные загружаются.
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
@@ -87,7 +108,6 @@ export default function PostedAppealsTab() {
     );
   }
 
-  // Условный рендеринг: отображение сообщения об ошибке, если загрузка не удалась.
   if (error) {
     return (
       <Box sx={{ p: 2 }}>
@@ -102,30 +122,21 @@ export default function PostedAppealsTab() {
         Размещенные заявки ({appeals.length})
       </Typography>
 
-      {/* Условный рендеринг: если заявок нет, отображаем соответствующее сообщение. */}
       {appeals.length === 0 ? (
         <Paper elevation={3} sx={{ p: 3, textAlign: "center" }}>
           <Typography variant="body1">Нет новых заявок</Typography>
         </Paper>
       ) : (
-        // Если заявки есть, отображаем их в виде списка карточек.
         <Box sx={{ mt: 2 }}>
           {appeals.map((appeal) => {
-            const { date, time } = formatDateTime(appeal.date_start); // Форматируем дату и время начала заявки.
+            const { date, time } = formatDateTime(appeal.date_start);
 
             return (
               <Paper key={appeal.id} elevation={3} sx={{ p: 3, mb: 3 }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                  }}
-                >
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                   <Typography variant="h6">
-                    {" "}
                     Заявка №{appeal.id} - {appeal.company_name_id.company_name}
                   </Typography>
-                  {/* Отображение статуса заявки в виде "чипа" */}
                   <Chip
                     label={
                       appeal.status.st === "new" ? "Новая" : appeal.status.st
@@ -140,14 +151,10 @@ export default function PostedAppealsTab() {
 
                 <Divider sx={{ my: 2 }} />
 
-                {/* Отображение основных деталей заявки в адаптивной сетке */}
                 <Box
                   sx={{
                     display: "grid",
-                    gridTemplateColumns: {
-                      xs: "1fr",
-                      sm: "1fr 1fr",
-                    },
+                    gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
                     gap: 2,
                   }}
                 >
@@ -177,7 +184,6 @@ export default function PostedAppealsTab() {
                   </Box>
                 </Box>
 
-                {/* Описание проблемы */}
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="subtitle2">Описание проблемы</Typography>
                   <Typography sx={{ whiteSpace: "pre-line" }}>
@@ -185,26 +191,20 @@ export default function PostedAppealsTab() {
                   </Typography>
                 </Box>
 
-                {/* Кнопка "Отменить заявку" */}
                 <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    mt: 3,
-                  }}
+                  sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}
                 >
                   <Button
                     variant="outlined"
                     color="error"
                     startIcon={<CancelIcon />}
-                    onClick={() => handleCancelAppeal(appeal.id)}
-                    disabled={appeal.status.st !== "new"} // Кнопка активна только для новых заявок
+                    onClick={() => handleOpenCancelDialog(appeal.id)} // Теперь открывает диалог
+                    disabled={appeal.status.st !== "new"}
                   >
                     Отменить заявку
                   </Button>
                 </Box>
 
-                {/* Сообщение, если заявка уже не новая и не может быть отменена */}
                 {appeal.status.st !== "new" && (
                   <Typography
                     variant="body2"
@@ -219,6 +219,50 @@ export default function PostedAppealsTab() {
           })}
         </Box>
       )}
+
+      {/* --- Диалоговое окно для ввода инициатора отмены --- */}
+      <Dialog
+        open={isDialogOpen}
+        onClose={handleCloseDialog}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Инициатор отмены</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
+            Укажите фамилию и инициалы лица со стороны заказчика, принявшего
+            решение об отмене.
+          </Typography>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Фамилия И. О."
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={initiatorName}
+            onChange={(e) => setInitiatorName(e.target.value)}
+            disabled={isSubmitting}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 0 }}>
+          <Button
+            onClick={handleCloseDialog}
+            color="inherit"
+            disabled={isSubmitting}
+          >
+            Назад
+          </Button>
+          <Button
+            onClick={handleConfirmCancel}
+            variant="contained"
+            color="error"
+            disabled={isSubmitting || !initiatorName.trim()}
+          >
+            {isSubmitting ? "Отмена..." : "Подтвердить отмену"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -164,10 +164,26 @@ export const appealRouter = (appealService: AppealService) => {
     async (req: Request, res: Response) => {
       try {
         const appealId = parseInt(req.params.id);
+
+        // 1. Извлекаем имя инициатора из тела запроса
+        const { cancel_initiator } = req.body;
+
+        // 2. (Опционально) Простая проверка на наличие данных
+        if (!cancel_initiator) {
+          res
+            .status(400)
+            .json({ error: "Необходимо указать инициатора отмены" });
+
+          return;
+        }
+
+        // 3. Передаем имя инициатора в сервис третьим аргументом
         const appeal = await appealService.cancelAppeal(
           appealId,
-          req.currentUser!.id
+          req.currentUser!.id,
+          cancel_initiator
         );
+
         res.json(appeal);
       } catch (error: unknown) {
         const message =

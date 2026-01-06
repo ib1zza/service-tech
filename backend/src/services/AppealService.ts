@@ -2,7 +2,7 @@ import { AppealRepository } from "../repositories/AppealRepository";
 import { AppealStatusRepository } from "../repositories/AppealStatusRepository";
 import { ClientRepository } from "../repositories/ClientRepository";
 import { StaffRepository } from "../repositories/StaffRepository";
-import { DataSource } from "typeorm";
+import { DataSource, In } from "typeorm";
 import { excelExportService } from "./excel-export.service";
 import { TelegramService } from "./TelegramService";
 import { AdminRepository } from "../repositories/AdminRepository";
@@ -62,7 +62,7 @@ export class AppealService {
 
     await this.telegramService.sendMessageToAdmin(
       admin.phone_number_admin,
-      `Новая заявка №${appeal.id} от ${client.company_name}`
+      `Назначено новое задание: Заявка №${appeal.id} от ${client.company_name}`
     );
 
     return appeal;
@@ -128,15 +128,25 @@ export class AppealService {
     // Уведомление клиента
     await this.telegramService.sendMessageToClient(
       client.phone_number_client,
-      `Закрыта заявка №${appeal.id} от ${client.company_name}`
+      `Заявка №${appeal.id} от ${client.company_name} выполнена (закрыта)`
     );
+
+    const statuses = await this.statusRepo.find({
+      where: [
+        { st: "completed" },
+        { st: "cancel" }, // Добавляем статус отмены
+      ],
+    });
+
+    if (statuses.length === 0) return [];
+    const statusIds = statuses.map((s) => s.id);
 
     // Генерация отчета
     if (appeal.company_name_id) {
       const appeals = await this.appealRepo.find({
         where: {
           company_name_id: appeal.company_name_id,
-          status: closedStatus,
+          status: In(statusIds),
         },
         relations: [
           "company_name_id",
@@ -154,37 +164,92 @@ export class AppealService {
   /**
    * Отмена заявки
    */
-  async cancelAppeal(appealId: number, userId: number) {
+  async cancelAppeal(
+    appealId: number,
+    userId: number,
+    cancelInitiator: string
+  ) {
     // Проверка существования пользователя
     const user = await this.clientRepo.findOne({ where: { id: userId } });
     if (!user) throw new Error("Пользователь не найден");
 
     // Получение статусов
     const cancelStatus = await this.statusRepo.findByStatusName("cancel");
-    const completedStatus = await this.statusRepo.findByStatusName("completed");
+    // const completedStatus = await this.statusRepo.findByStatusName("completed");
 
     // Поиск исходной заявки
     const prevAppeal = await this.appealRepo.findOne({
       where: { id: appealId },
+      relations: ["company_name_id", "fio_staff_close_id", "fio_staff_open_id"],
     });
     if (!prevAppeal) throw new Error("Заявка не найдена");
 
-    // Создание заявки на отмену
-    const newAppeal = await this.appealRepo.createAppeal(
-      "Отмена заявки",
-      "Отмена заявки от " + prevAppeal.date_start.toLocaleString("ru"),
-      "Отмена заявки от " + prevAppeal.date_start.toLocaleString("ru"),
-      cancelStatus!,
-      user
-    );
+    // Создание заявки на отмену (системная запись об отмене)
+    // Добавляем информацию об инициаторе в описание этой записи
+    // const newAppeal = await this.appealRepo.createAppeal(
+    //   "Отмена заявки",
+    //   `Отмена заявки от ${prevAppeal.date_start.toLocaleString(
+    //     "ru"
+    //   )}. Инициатор: ${cancelInitiator}`,
+    //   `Инициатор отмены со стороны заказчика: ${cancelInitiator}`,
+    //   cancelStatus!,
+    //   user
+    // );
 
     // Обновление исходной заявки
-    prevAppeal.status = completedStatus!;
+    prevAppeal.status = cancelStatus!;
     prevAppeal.date_close = new Date();
-    prevAppeal.appeal_desc =
-      "Заявка отменена " + new Date().toLocaleString("ru");
+
+    // Формируем подробный комментарий в основной заявке
+    prevAppeal.appeal_desc = `Заявка отменена заказчиком ${new Date().toLocaleString(
+      "ru"
+    )}. Инициатор отмены: ${cancelInitiator}`;
 
     await this.appealRepo.save(prevAppeal);
+
+    const statuses = await this.statusRepo.find({
+      where: [
+        { st: "completed" },
+        { st: "cancel" }, // Добавляем статус отмены
+      ],
+    });
+
+    if (statuses.length === 0) return [];
+    const statusIds = statuses.map((s) => s.id);
+
+    console.log(statusIds, prevAppeal);
+
+    const client = await this.clientRepo.findOne({
+      where: { id: prevAppeal.company_name_id.id },
+      relations: ["appeals"],
+    });
+
+    if (!client) throw new Error("Клиент не найден");
+
+    const admin = await this.adminRepo.getOneAdmin();
+    if (!admin) throw new Error("Администратор не найден");
+
+    await this.telegramService.sendMessageToAdmin(
+      admin.phone_number_admin,
+      `Заявка №${prevAppeal.id} от ${client.company_name} отменена заказчиком.`
+    );
+
+    if (prevAppeal.company_name_id) {
+      const appeals = await this.appealRepo.find({
+        where: {
+          company_name_id: prevAppeal.company_name_id,
+          status: In(statusIds),
+        },
+        relations: [
+          "company_name_id",
+          "status",
+          "fio_staff_close_id",
+          "fio_staff_open_id",
+        ],
+      });
+
+      await excelExportService.getOrCreateReport(client, appeals);
+    }
 
     return prevAppeal;
   }

@@ -171,6 +171,9 @@ export default function HistoryAppealsTab() {
   const [selectedAppeal, setSelectedAppeal] = useState<AppealCompleted | null>(
     null
   );
+
+  console.log("selectedAppeal", selectedAppeal);
+
   const [order, setOrder] = useState<Order>("asc");
   const [orderBy, setOrderBy] = useState<keyof AppealCompleted>("id");
   const [filters, setFilters] = useState({
@@ -477,14 +480,18 @@ export default function HistoryAppealsTab() {
               <Typography>
                 <strong>Кто сообщил:</strong> {selectedAppeal.fio_client}
               </Typography>
-              <Typography>
-                <strong>Кто принял:</strong>{" "}
-                {selectedAppeal.fio_staff_open_id.fio_staff || "Не указан"}
-              </Typography>
-              <Typography>
-                <strong>Кто закрыл:</strong>{" "}
-                {selectedAppeal.fio_staff_close_id.fio_staff || "Не указан"}
-              </Typography>
+              {selectedAppeal.fio_staff_open_id && (
+                <Typography>
+                  <strong>Кто принял:</strong>{" "}
+                  {selectedAppeal.fio_staff_open_id?.fio_staff || "Не указан"}
+                </Typography>
+              )}
+              {selectedAppeal.fio_staff_close_id && (
+                <Typography>
+                  <strong>Кто закрыл:</strong>{" "}
+                  {selectedAppeal.fio_staff_close_id?.fio_staff || "Не указан"}
+                </Typography>
+              )}
               <Typography>
                 <strong>Исполнители работ:</strong>{" "}
                 {selectedAppeal.fio_staff || "Не указан"}

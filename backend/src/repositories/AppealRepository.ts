@@ -1,4 +1,4 @@
-import { DataSource, Repository } from "typeorm";
+import { DataSource, In, Repository } from "typeorm";
 import { Appeal } from "../entities/Appeal";
 import { AppealStatus } from "../entities/AppealStatus";
 import { Client } from "../entities/Client";
@@ -73,31 +73,43 @@ export class AppealRepository extends Repository<Appeal> {
 
   // Поиск завершенных обращений
   async findCompletedAppeals(): Promise<Appeal[]> {
-    const status = await this.manager.findOne(AppealStatus, {
-      where: { st: "completed" },
-    });
-    if (!status) return [];
-
-    return this.find({
-      where: { status: { id: status.id } },
-      relations: [
-        "company_name_id",
-        "fio_staff_close_id", // Сотрудник, закрывший обращение
-        "fio_staff_open_id", // Сотрудник, открывший обращение
+    const statuses = await this.manager.find(AppealStatus, {
+      where: [
+        { st: "completed" },
+        { st: "cancel" }, // Добавляем статус отмены
       ],
+    });
+
+    if (statuses.length === 0) return [];
+    const statusIds = statuses.map((s) => s.id);
+    return this.find({
+      where: {
+        status: {
+          id: In(statusIds), // Используем оператор In для фильтрации по нескольким ID
+        },
+      },
+      relations: ["company_name_id", "fio_staff_close_id", "fio_staff_open_id"],
+      order: {
+        date_close: "DESC", // Рекомендую добавить сортировку по дате закрытия (новые сверху)
+      },
     });
   }
 
   // Поиск завершенных обращений для конкретного клиента
   async getCompletedAppealsByClientId(clientId: number): Promise<Appeal[]> {
-    const status = await this.manager.findOne(AppealStatus, {
-      where: { st: "completed" },
+    const statuses = await this.manager.find(AppealStatus, {
+      where: [
+        { st: "completed" },
+        { st: "cancel" }, // Добавляем статус отмены
+      ],
     });
-    if (!status) return [];
+
+    if (statuses.length === 0) return [];
+    const statusIds = statuses.map((s) => s.id);
 
     return this.find({
       where: {
-        status: { id: status.id },
+        status: In(statusIds),
         company_name_id: { id: clientId },
       },
       relations: [

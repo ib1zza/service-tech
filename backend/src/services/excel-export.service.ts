@@ -138,19 +138,18 @@ class ExcelExportService {
     appeals: Appeal[]
   ): Promise<fs.ReadStream> {
     try {
-      // Формирование имени файла
-      const fileName = `${client.company_name}_report.xlsx`;
-      const filePath = path.join(this.reportsDir, fileName);
+      // Логируем процесс (теперь это всегда создание/обновление)
+      console.log(
+        `Generating/Updating report for client: ${client.company_name}`
+      );
 
-      try {
-        // Проверка существования отчета
-        await fs.promises.access(filePath);
-        return this.getReportStream(filePath);
-      } catch {
-        // Если отчет не существует - создаем новый
-        const newFilePath = await this.generateClientReport(client, appeals);
-        return this.getReportStream(newFilePath);
-      }
+      // Просто вызываем генерацию.
+      // Если generateClientReport внутри использует fs.writeFile или подобные методы,
+      // файл будет перезаписан автоматически.
+      const filePath = await this.generateClientReport(client, appeals);
+
+      // Возвращаем стрим уже обновленного файла
+      return this.getReportStream(filePath);
     } catch (error: any) {
       throw new Error(`Ошибка формирования отчета: ${error.message}`);
     }
