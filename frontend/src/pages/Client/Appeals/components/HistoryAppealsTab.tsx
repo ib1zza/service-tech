@@ -274,6 +274,40 @@ export default function HistoryAppealsTab() {
     </Paper>
   );
 
+  function parseAndFormatDate(str: string) {
+    // Находим начало и конец даты
+    const startIndex = str.indexOf("[");
+    const endIndex = str.indexOf("]");
+
+    // Если нет квадратных скобок, возвращаем исходную строку
+    if (startIndex === -1 || endIndex === -1) {
+      return str;
+    }
+
+    // Извлекаем дату между скобками
+    const dateStr = str.substring(startIndex + 1, endIndex);
+
+    // Создаем объект Date
+    const date = new Date(dateStr);
+
+    // Форматируем дату
+    const formatter = new Intl.DateTimeFormat("ru-RU", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const formattedDate = formatter.format(date);
+
+    // Собираем строку без квадратных скобок
+    const before = str.substring(0, startIndex);
+    const after = str.substring(endIndex + 1);
+
+    return before + formattedDate + after;
+  }
+
   return (
     <Box sx={{ width: "100%" }}>
       <Typography variant="h6" gutterBottom>
@@ -505,7 +539,7 @@ export default function HistoryAppealsTab() {
                 <strong>Описание выполненных работ:</strong>
               </Typography>
               <Typography sx={{ pl: 2 }}>
-                {selectedAppeal.appeal_desc}
+                {parseAndFormatDate(selectedAppeal.appeal_desc)}
               </Typography>
             </Box>
           )}

@@ -58,6 +58,41 @@ class ExcelExportService {
       column.alignment = { horizontal: "left", vertical: "middle" };
     });
 
+    function parseAndFormatDate(str: string) {
+      // Находим начало и конец даты
+      const startIndex = str.indexOf("[");
+      const endIndex = str.indexOf("]");
+
+      // Если нет квадратных скобок, возвращаем исходную строку
+      if (startIndex === -1 || endIndex === -1) {
+        return str;
+      }
+
+      // Извлекаем дату между скобками
+      const dateStr = str.substring(startIndex + 1, endIndex);
+
+      // Создаем объект Date
+      const date = new Date(dateStr);
+
+      // Форматируем дату
+      const formatter = new Intl.DateTimeFormat("ru-RU", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Europe/Moscow",
+      });
+
+      const formattedDate = formatter.format(date);
+
+      // Собираем строку без квадратных скобок
+      const before = str.substring(0, startIndex);
+      const after = str.substring(endIndex + 1);
+
+      return before + formattedDate + after;
+    }
+
     // Добавление данных в отчет
     [...appeals]
       .sort((a, b) => b.date_start.getTime() - a.date_start.getTime()) // Сортировка по дате (новые сверху)
@@ -70,6 +105,7 @@ class ExcelExportService {
             year: "numeric",
             hour: "2-digit",
             minute: "2-digit",
+            timeZone: "Europe/Moscow",
           }),
           date_close: appeal.date_close.toLocaleDateString("ru-RU", {
             day: "2-digit",
@@ -77,6 +113,7 @@ class ExcelExportService {
             year: "numeric",
             hour: "2-digit",
             minute: "2-digit",
+            timeZone: "Europe/Moscow",
           }),
           mechanism: appeal.mechanism,
           problem: appeal.problem,
@@ -84,7 +121,7 @@ class ExcelExportService {
           staff_open: appeal.fio_staff_open_id?.fio_staff,
           staff_close: appeal.fio_staff_close_id?.fio_staff,
           fio_staff: appeal.fio_staff,
-          description: appeal.appeal_desc,
+          description: parseAndFormatDate(appeal.appeal_desc),
           client: appeal.fio_client,
         });
       });

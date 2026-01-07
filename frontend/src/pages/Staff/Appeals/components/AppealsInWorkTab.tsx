@@ -234,7 +234,17 @@ export default function AppealsInWorkTab() {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Закрытие заявки №{selectedAppeal?.id}</DialogTitle>
+        <DialogTitle>
+          Закрытие заявки №{selectedAppeal?.id}. Заказчик:{" "}
+          {selectedAppeal?.company_name_id.company_name}. От{" "}
+          {new Date(selectedAppeal?.date_start).toLocaleDateString("ru-RU", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3, pt: 2 }}>
             {/* Поле для описания выполненных работ */}

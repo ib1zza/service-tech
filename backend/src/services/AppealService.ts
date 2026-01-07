@@ -201,9 +201,7 @@ export class AppealService {
     prevAppeal.date_close = new Date();
 
     // Формируем подробный комментарий в основной заявке
-    prevAppeal.appeal_desc = `Заявка отменена заказчиком ${new Date().toLocaleString(
-      "ru"
-    )}. Инициатор отмены: ${cancelInitiator}`;
+    prevAppeal.appeal_desc = `Заявка отменена заказчиком [${new Date().toISOString()}]. Инициатор отмены: ${cancelInitiator}`;
 
     await this.appealRepo.save(prevAppeal);
 

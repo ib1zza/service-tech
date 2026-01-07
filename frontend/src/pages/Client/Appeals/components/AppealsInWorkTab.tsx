@@ -172,7 +172,7 @@ export default function AppealsInWorkTab() {
                     <Typography>{appeal.fio_client}</Typography>
                   </Box>
                   <Box>
-                    <Typography variant="subtitle2">Принял мастер</Typography>
+                    <Typography variant="subtitle2">Принял:</Typography>
                     <Typography>
                       {appeal.fio_staff_open_id.fio_staff || "Не назначен"}
                     </Typography>
@@ -180,7 +180,9 @@ export default function AppealsInWorkTab() {
                 </Box>
 
                 <Box sx={{ mt: 2 }}>
-                  <Typography variant="subtitle2">Описание проблемы</Typography>
+                  <Typography variant="subtitle2">
+                    Описание неисправности
+                  </Typography>
                   <Typography sx={{ whiteSpace: "pre-line" }}>
                     {appeal.problem}
                   </Typography>

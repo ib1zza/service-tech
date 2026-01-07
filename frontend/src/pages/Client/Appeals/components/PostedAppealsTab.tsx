@@ -185,7 +185,9 @@ export default function PostedAppealsTab() {
                 </Box>
 
                 <Box sx={{ mt: 2 }}>
-                  <Typography variant="subtitle2">Описание проблемы</Typography>
+                  <Typography variant="subtitle2">
+                    Описание неисправности
+                  </Typography>
                   <Typography sx={{ whiteSpace: "pre-line" }}>
                     {appeal.problem}
                   </Typography>
