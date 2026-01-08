@@ -174,7 +174,7 @@ export default function AppealsInWorkTab() {
                   <Box>
                     <Typography variant="subtitle2">Принял:</Typography>
                     <Typography>
-                      {appeal.fio_staff_open_id.fio_staff || "Не назначен"}
+                      {appeal.fio_staff_open_id?.fio_staff || "Не назначен"}
                     </Typography>
                   </Box>
                 </Box>

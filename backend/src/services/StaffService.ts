@@ -2,6 +2,8 @@ import { StaffRepository } from "../repositories/StaffRepository";
 import { RoleRepository } from "../repositories/RoleRepository";
 import bcrypt from "bcrypt";
 import { DataSource } from "typeorm";
+import { AppealRepository } from "../repositories/AppealRepository";
+import { Appeal } from "../entities/Appeal";
 
 /**
  * Сервис для работы с сотрудниками (Staff)
@@ -9,11 +11,13 @@ import { DataSource } from "typeorm";
 export class StaffService {
   private staffRepo: StaffRepository;
   private roleRepo: RoleRepository;
+  private appealRepo: AppealRepository;
 
   constructor(dataSource: DataSource) {
     // Инициализация репозиториев
     this.staffRepo = new StaffRepository(dataSource);
     this.roleRepo = new RoleRepository(dataSource);
+    this.appealRepo = new AppealRepository(dataSource);
   }
 
   /**
@@ -64,6 +68,16 @@ export class StaffService {
    * @throws Ошибка если сотрудник не найден
    */
   async removeStaff(staffId: number) {
+    await this.appealRepo.update(
+      { fio_staff_close_id: { id: staffId } },
+      { fio_staff_close_id: null as any }
+    );
+
+    await this.appealRepo.update(
+      { fio_staff_open_id: { id: staffId } },
+      { fio_staff_open_id: null as any }
+    );
+
     return this.staffRepo.removeStaff(staffId);
   }
 

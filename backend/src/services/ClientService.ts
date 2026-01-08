@@ -188,7 +188,7 @@ export class ClientService {
     if (!client) throw new Error("Клиент не найден");
 
     // Сначала удаляем все связанные обращения
-    const appeals = await this.appealRepo.delete({
+    await this.appealRepo.delete({
       company_name_id: { id: clientId },
     });
     // Удаление клиента
