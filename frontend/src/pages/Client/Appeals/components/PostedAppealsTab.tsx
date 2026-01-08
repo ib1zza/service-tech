@@ -159,23 +159,23 @@ export default function PostedAppealsTab() {
                   }}
                 >
                   <Box>
-                    <Typography variant="subtitle2">Заказчик</Typography>
+                    <Typography variant="subtitle2">Заказчик:</Typography>
                     <Typography>
                       {appeal.company_name_id.company_name}
                     </Typography>
                   </Box>
                   <Box>
                     <Typography variant="subtitle2">
-                      Оборудование (механизм)
+                      Оборудование (механизм):
                     </Typography>
                     <Typography>{appeal.mechanism}</Typography>
                   </Box>
                   <Box>
-                    <Typography variant="subtitle2">Кто сообщил</Typography>
+                    <Typography variant="subtitle2">Кто сообщил:</Typography>
                     <Typography>{appeal.fio_client}</Typography>
                   </Box>
                   <Box>
-                    <Typography variant="subtitle2">Статус</Typography>
+                    <Typography variant="subtitle2">Статус:</Typography>
                     <Typography>
                       {appeal.status.st === "new"
                         ? "Ожидает принятия"
@@ -186,7 +186,7 @@ export default function PostedAppealsTab() {
 
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="subtitle2">
-                    Описание неисправности
+                    Описание неисправности:
                   </Typography>
                   <Typography sx={{ whiteSpace: "pre-line" }}>
                     {appeal.problem}

@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import { DataSource } from "typeorm";
 import { Client } from "../entities/Client";
 import { TelegramService } from "./TelegramService";
+import { AppealRepository } from "../repositories/AppealRepository";
 
 /**
  * Сервис для работы с клиентами
@@ -12,11 +13,13 @@ export class ClientService {
   private clientRepo: ClientRepository;
   private roleRepo: RoleRepository;
   private telegramService: TelegramService;
+  private appealRepo: AppealRepository;
 
   constructor(dataSource: DataSource, telegramService: TelegramService) {
     this.clientRepo = new ClientRepository(dataSource);
     this.roleRepo = new RoleRepository(dataSource);
     this.telegramService = telegramService;
+    this.appealRepo = new AppealRepository(dataSource);
   }
 
   /**
@@ -184,6 +187,10 @@ export class ClientService {
     const client = await this.clientRepo.findByIdWithRole(clientId);
     if (!client) throw new Error("Клиент не найден");
 
+    // Сначала удаляем все связанные обращения
+    const appeals = await this.appealRepo.delete({
+      company_name_id: { id: clientId },
+    });
     // Удаление клиента
     await this.clientRepo.removeClient(clientId);
   }

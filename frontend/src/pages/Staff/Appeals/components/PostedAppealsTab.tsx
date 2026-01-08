@@ -172,27 +172,27 @@ export default function PostedAppealsTab() {
                   }}
                 >
                   <Box>
-                    <Typography variant="subtitle2">Заказчик</Typography>
+                    <Typography variant="subtitle2">Заказчик:</Typography>
                     <Typography>
                       {appeal.company_name_id.company_name}
                     </Typography>
                   </Box>
                   <Box>
                     <Typography variant="subtitle2">
-                      Оборудование (механизм)
+                      Оборудование (механизм):
                     </Typography>
                     <Typography>{appeal.mechanism}</Typography>
                   </Box>
                   <Box>
                     <Typography variant="subtitle2">
-                      Описание проблемы
+                      Описание проблемы:
                     </Typography>
                     <Typography sx={{ whiteSpace: "pre-line" }}>
                       {appeal.problem}
                     </Typography>
                   </Box>
                   <Box>
-                    <Typography variant="subtitle2">Кто сообщил</Typography>
+                    <Typography variant="subtitle2">Кто сообщил:</Typography>
                     <Typography>{appeal.fio_client}</Typography>
                   </Box>
                   {/* Закомментированное поле статуса, так как чип уже отображает статус */}

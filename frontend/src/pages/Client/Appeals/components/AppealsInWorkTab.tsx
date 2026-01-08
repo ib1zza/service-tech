@@ -156,19 +156,19 @@ export default function AppealsInWorkTab() {
                   }}
                 >
                   <Box>
-                    <Typography variant="subtitle2">Заказчик</Typography>
+                    <Typography variant="subtitle2">Заказчик:</Typography>
                     <Typography>
                       {appeal.company_name_id.company_name}
                     </Typography>
                   </Box>
                   <Box>
                     <Typography variant="subtitle2">
-                      Оборудование (механизм)
+                      Оборудование (механизм):
                     </Typography>
                     <Typography>{appeal.mechanism}</Typography>
                   </Box>
                   <Box>
-                    <Typography variant="subtitle2">Кто сообщил</Typography>
+                    <Typography variant="subtitle2">Кто сообщил:</Typography>
                     <Typography>{appeal.fio_client}</Typography>
                   </Box>
                   <Box>
@@ -181,7 +181,7 @@ export default function AppealsInWorkTab() {
 
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="subtitle2">
-                    Описание неисправности
+                    Описание неисправности:
                   </Typography>
                   <Typography sx={{ whiteSpace: "pre-line" }}>
                     {appeal.problem}
@@ -191,7 +191,7 @@ export default function AppealsInWorkTab() {
                 {appeal.appeal_desc && (
                   <Box sx={{ mt: 2 }}>
                     <Typography variant="subtitle2">
-                      Комментарий мастера
+                      Комментарий мастера:
                     </Typography>
                     <Typography sx={{ whiteSpace: "pre-line" }}>
                       {appeal.appeal_desc}

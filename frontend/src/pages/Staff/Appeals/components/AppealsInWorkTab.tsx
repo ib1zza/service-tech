@@ -172,31 +172,31 @@ export default function AppealsInWorkTab() {
                   }}
                 >
                   <Box>
-                    <Typography variant="subtitle2">Заказчик</Typography>
+                    <Typography variant="subtitle2">Заказчик:</Typography>
                     <Typography>
                       {appeal.company_name_id.company_name}
                     </Typography>
                   </Box>
                   <Box>
                     <Typography variant="subtitle2">
-                      Оборудование (механизм)
+                      Оборудование (механизм):
                     </Typography>
                     <Typography>{appeal.mechanism}</Typography>
                   </Box>
                   <Box>
                     <Typography variant="subtitle2">
-                      Описание проблемы
+                      Описание неисправности:
                     </Typography>
                     <Typography sx={{ whiteSpace: "pre-line" }}>
                       {appeal.problem}
                     </Typography>
                   </Box>
                   <Box>
-                    <Typography variant="subtitle2">Кто сообщил</Typography>
+                    <Typography variant="subtitle2">Кто сообщил:</Typography>
                     <Typography>{appeal.fio_client}</Typography>
                   </Box>
                   <Box>
-                    <Typography variant="subtitle2">Принял</Typography>
+                    <Typography variant="subtitle2">Принял:</Typography>
                     <Typography>
                       {appeal.fio_staff_open_id.fio_staff || "Не назначен"}
                     </Typography>
