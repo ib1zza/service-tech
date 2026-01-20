@@ -114,10 +114,10 @@ const clearDatabase = async (dataSource: DataSource) => {
     console.log("   - Users (Admins, Staffs, Clients) cleared.");
 
     await queryRunner.query(
-      "TRUNCATE TABLE appeal_status RESTART IDENTITY CASCADE;"
+      "TRUNCATE TABLE appeal_status RESTART IDENTITY CASCADE;",
     );
     await queryRunner.query(
-      'TRUNCATE TABLE "POinfo" RESTART IDENTITY CASCADE;'
+      'TRUNCATE TABLE "POinfo" RESTART IDENTITY CASCADE;',
     ); // Обратите внимание на кавычки для POinfo
     console.log("   - AppealStatus and POinfo cleared.");
 
@@ -203,7 +203,7 @@ const seedDatabase = async (dataSource: DataSource) => {
     closedStatus,
   ]);
   console.log(
-    "✅ Appeal Statuses seeded: new, in_progress, completed, cancel."
+    "✅ Appeal Statuses seeded: new, in_progress, completed, cancel.",
   );
 
   // 4. Сидирование POinfo
@@ -226,7 +226,7 @@ const seedDatabase = async (dataSource: DataSource) => {
   });
   await adminRepo.save(defaultAdmin);
   console.log(
-    `🚀 Default Admin created: Login: 'admin', Password: '${defaultPlainPassword}'`
+    `🚀 Default Admin created: Login: 'admin', Password: '${defaultPlainPassword}'`,
   );
 
   // 6. Создание сотрудников (Staff)
@@ -328,7 +328,7 @@ const seedDatabase = async (dataSource: DataSource) => {
       fio_staff_open_id: defaultStaff,
       company_name_id: defaultClient,
       fio_staff: defaultStaff.fio_staff,
-    })
+    }),
   );
 
   // 8.2. Обращение в работе (In Progress)
@@ -343,7 +343,7 @@ const seedDatabase = async (dataSource: DataSource) => {
       fio_staff_open_id: staff2,
       company_name_id: client2,
       fio_staff: staff2.fio_staff,
-    })
+    }),
   );
 
   // 8.3. Отмененное обращение (Cancel)
@@ -360,7 +360,7 @@ const seedDatabase = async (dataSource: DataSource) => {
       fio_staff_close_id: staff3, // Закрыл тот же сотрудник
       company_name_id: client3,
       fio_staff: staff3.fio_staff,
-    })
+    }),
   );
   // ------------------------------------
 
@@ -380,7 +380,7 @@ const seedDatabase = async (dataSource: DataSource) => {
       fio_staff_close_id: staff2,
       company_name_id: defaultClient,
       fio_staff: staff2.fio_staff,
-    })
+    }),
   );
 
   // 8.5. Завершено НА ЭТОЙ НЕДЕЛЕ (3 дня назад)
@@ -397,7 +397,7 @@ const seedDatabase = async (dataSource: DataSource) => {
       fio_staff_close_id: defaultStaff,
       company_name_id: defaultClient,
       fio_staff: defaultStaff.fio_staff,
-    })
+    }),
   );
 
   // 8.6. Завершено В ЭТОМ МЕСЯЦЕ (5 дней назад)
@@ -415,7 +415,7 @@ const seedDatabase = async (dataSource: DataSource) => {
       fio_staff_close_id: staff3,
       company_name_id: defaultClient,
       fio_staff: staff3.fio_staff,
-    })
+    }),
   );
 
   // 8.7. Завершено В ЭТОМ ГОДУ (6 месяцев назад)
@@ -432,7 +432,7 @@ const seedDatabase = async (dataSource: DataSource) => {
       fio_staff_close_id: staff2,
       company_name_id: defaultClient,
       fio_staff: staff2.fio_staff,
-    })
+    }),
   );
 
   // 8.8. Завершено В ПРОШЛОМ ГОДУ
@@ -449,7 +449,7 @@ const seedDatabase = async (dataSource: DataSource) => {
       fio_staff_close_id: staff3,
       company_name_id: defaultClient,
       fio_staff: staff3.fio_staff,
-    })
+    }),
   );
   // ------------------------------------
 
@@ -467,7 +467,7 @@ const seedDatabase = async (dataSource: DataSource) => {
       fio_staff_open_id: staff2,
       company_name_id: defaultClient,
       fio_staff: staff2.fio_staff,
-    })
+    }),
   );
 
   // 8.10. В работе
@@ -482,7 +482,7 @@ const seedDatabase = async (dataSource: DataSource) => {
       fio_staff_open_id: staff3,
       company_name_id: defaultClient,
       fio_staff: staff3.fio_staff,
-    })
+    }),
   );
 
   await appealRepo.save(appealsToSeed);
@@ -508,9 +508,8 @@ const startApp = async () => {
     const services = initServices(AppDataSource);
     setupRoutes(services);
 
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-      console.log(`API docs available on http://localhost:${PORT}/api-docs`);
+    app.listen(5000, "0.0.0.0", () => {
+      console.log("Backend running on port 5000");
     });
   } catch (error) {
     console.error("Application startup failed:", error);
