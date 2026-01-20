@@ -37,6 +37,8 @@ services:
     container_name: service-tech-frontend
     ports:
       - "5173:80"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
 
 volumes:
   pgdata:

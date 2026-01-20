@@ -17,7 +17,7 @@ export const appealRouter = (appealService: AppealService) => {
       try {
         if (req.currentUser!.role === "client") {
           const appeals = await appealService.getNewAppealsByClientId(
-            req.currentUser!.id
+            req.currentUser!.id,
           );
           res.json(appeals);
           return;
@@ -30,7 +30,7 @@ export const appealRouter = (appealService: AppealService) => {
           error instanceof Error ? error.message : "Unknown error";
         res.status(400).json({ error: message });
       }
-    }
+    },
   );
 
   // Получение заявок в работе
@@ -43,7 +43,7 @@ export const appealRouter = (appealService: AppealService) => {
       try {
         if (req.currentUser!.role === "client") {
           const appeals = await appealService.getAppealsInProgressByClientId(
-            req.currentUser!.id
+            req.currentUser!.id,
           );
           res.json(appeals);
           return;
@@ -55,7 +55,7 @@ export const appealRouter = (appealService: AppealService) => {
           error instanceof Error ? error.message : "Unknown error";
         res.status(400).json({ error: message });
       }
-    }
+    },
   );
 
   // Получение завершенных заявок
@@ -68,7 +68,7 @@ export const appealRouter = (appealService: AppealService) => {
       try {
         if (req.currentUser!.role === "client") {
           const appeals = await appealService.getCompletedAppealsByClientId(
-            req.currentUser!.id
+            req.currentUser!.id,
           );
           res.json(appeals);
           return;
@@ -80,7 +80,7 @@ export const appealRouter = (appealService: AppealService) => {
           error instanceof Error ? error.message : "Unknown error";
         res.status(400).json({ error: message });
       }
-    }
+    },
   );
 
   // Создание новой заявки
@@ -91,12 +91,13 @@ export const appealRouter = (appealService: AppealService) => {
     requireRole("client"),
     async (req: Request, res: Response) => {
       try {
-        const { mechanism, problem, fioClient } = req.body;
+        const { mechanism, problem, fioClient, priority } = req.body;
         const appeal = await appealService.createAppeal(
           mechanism,
           problem,
           fioClient,
-          req.currentUser!.id
+          req.currentUser!.id,
+          priority,
         );
         res.status(201).json(appeal);
       } catch (error: unknown) {
@@ -104,7 +105,7 @@ export const appealRouter = (appealService: AppealService) => {
           error instanceof Error ? error.message : "Unknown error";
         res.status(400).json({ error: message });
       }
-    }
+    },
   );
 
   // Взятие заявки в работу
@@ -118,7 +119,7 @@ export const appealRouter = (appealService: AppealService) => {
         const appealId = parseInt(req.params.id);
         const appeal = await appealService.takeAppealToWork(
           appealId,
-          req.currentUser!.id
+          req.currentUser!.id,
         );
         res.json(appeal);
       } catch (error: unknown) {
@@ -126,7 +127,7 @@ export const appealRouter = (appealService: AppealService) => {
           error instanceof Error ? error.message : "Unknown error";
         res.status(400).json({ error: message });
       }
-    }
+    },
   );
 
   // Закрытие заявки
@@ -143,7 +144,7 @@ export const appealRouter = (appealService: AppealService) => {
           appealId,
           req.currentUser!.id,
           description,
-          fio_staff
+          fio_staff,
         );
         res.json(appeal);
       } catch (error: unknown) {
@@ -152,7 +153,7 @@ export const appealRouter = (appealService: AppealService) => {
         console.log(error);
         res.status(400).json({ error: message });
       }
-    }
+    },
   );
 
   // Отмена заявки
@@ -181,7 +182,7 @@ export const appealRouter = (appealService: AppealService) => {
         const appeal = await appealService.cancelAppeal(
           appealId,
           req.currentUser!.id,
-          cancel_initiator
+          cancel_initiator,
         );
 
         res.json(appeal);
@@ -190,7 +191,7 @@ export const appealRouter = (appealService: AppealService) => {
           error instanceof Error ? error.message : "Unknown error";
         res.status(400).json({ error: message });
       }
-    }
+    },
   );
 
   return router;

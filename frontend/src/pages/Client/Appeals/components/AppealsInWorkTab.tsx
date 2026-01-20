@@ -8,7 +8,6 @@ import {
   Divider,
   CircularProgress,
   Alert,
-  // Новые импорты для диалогового окна
   Dialog,
   DialogTitle,
   DialogContent,
@@ -25,26 +24,40 @@ export default function AppealsInWorkTab() {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAppSelector((state) => state.auth);
 
-  // Состояния для диалога отмены
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAppealId, setSelectedAppealId] = useState<number | null>(null);
   const [initiatorName, setInitiatorName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Открытие диалога
+  // --- Функция для определения цвета приоритета ---
+  const getPriorityColor = (
+    priority: string,
+  ): "error" | "warning" | "info" | "success" | "default" => {
+    switch (priority) {
+      case "Критичный":
+        return "error"; // Красный
+      case "Высокий":
+        return "warning"; // Оранжевый
+      case "Средний":
+        return "info"; // Синий
+      case "Низкий":
+        return "success"; // Зеленый
+      default:
+        return "default";
+    }
+  };
+
   const handleOpenCancelDialog = (appealId: number) => {
     setSelectedAppealId(appealId);
     setIsDialogOpen(true);
   };
 
-  // Закрытие диалога и сброс полей
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setSelectedAppealId(null);
     setInitiatorName("");
   };
 
-  // Обработчик подтверждения отмены
   const handleConfirmCancel = async () => {
     if (!selectedAppealId) return;
     if (!initiatorName.trim()) {
@@ -54,11 +67,7 @@ export default function AppealsInWorkTab() {
 
     try {
       setIsSubmitting(true);
-      // Предполагается, что API метод принимает ID и данные об отмене (инициатора)
-      // Если ваш API принимает только ID, передайте инициатора вторым аргументом или в объекте,
-      // в зависимости от реализации вашего appealApi.cancelAppeal
       await appealApi.cancelAppeal(selectedAppealId, initiatorName);
-
       setAppeals(appeals.filter((appeal) => appeal.id !== selectedAppealId));
       alert("Заявка успешно отменена");
       handleCloseDialog();
@@ -87,7 +96,8 @@ export default function AppealsInWorkTab() {
         setLoading(true);
         const data = await appealApi.getAppealsInProgress();
         const userAppeals = data.filter(
-          (appeal) => appeal.company_name_id.company_name === user?.company_name
+          (appeal) =>
+            appeal.company_name_id.company_name === user?.company_name,
         );
         setAppeals(userAppeals);
         setError(null);
@@ -135,11 +145,28 @@ export default function AppealsInWorkTab() {
 
             return (
               <Paper key={appeal.id} elevation={3} sx={{ p: 3, mb: 3 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                  }}
+                >
                   <Typography variant="h6">
                     Заявка №{appeal.id} - {appeal.company_name_id.company_name}
                   </Typography>
-                  <Chip label="В работе" color="warning" />
+
+                  {/* Контейнер для тегов */}
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    {/* Тег приоритета */}
+                    <Chip
+                      label={`Приоритет: ${appeal.priority || "Средний"}`}
+                      color={getPriorityColor(appeal.priority || "Средний")}
+                      variant="outlined"
+                      size="small"
+                    />
+                    <Chip label="В работе" color="warning" size="small" />
+                  </Box>
                 </Box>
 
                 <Typography variant="subtitle1" gutterBottom sx={{ mt: 1 }}>
@@ -206,7 +233,7 @@ export default function AppealsInWorkTab() {
                     variant="outlined"
                     color="error"
                     startIcon={<CancelIcon />}
-                    onClick={() => handleOpenCancelDialog(appeal.id)} // Вызов диалога
+                    onClick={() => handleOpenCancelDialog(appeal.id)}
                   >
                     Отменить заявку
                   </Button>
@@ -217,7 +244,7 @@ export default function AppealsInWorkTab() {
         </Box>
       )}
 
-      {/* Диалоговое окно отмены заявки */}
+      {/* Диалоговое окно (без изменений) */}
       <Dialog
         open={isDialogOpen}
         onClose={handleCloseDialog}

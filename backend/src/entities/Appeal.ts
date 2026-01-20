@@ -14,6 +14,13 @@ export class Appeal {
   @Column({ length: 25 })
   mechanism: string;
 
+  @Column({
+    type: "varchar",
+    length: 20,
+    default: "Средний",
+  })
+  priority: string;
+
   // Описание проблемы (ограничение 256 символов)
   @Column({ length: 256 })
   problem: string;

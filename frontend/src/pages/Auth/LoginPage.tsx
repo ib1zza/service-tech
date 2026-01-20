@@ -191,15 +191,15 @@ export default function LoginPage() {
             control={control}
             render={({ field }) => (
               <FormControl fullWidth margin="normal">
-                <InputLabel>Тип пользователя</InputLabel>
+                <InputLabel>Тип пользовательского входа</InputLabel>
                 <Select
                   {...field}
-                  label="Тип пользователя"
+                  label="Тип пользовательского входа’"
                   error={!!errors.roleType}
                 >
                   <MenuItem value="admin">Администратор</MenuItem>
-                  <MenuItem value="staff">Сотрудник</MenuItem>
-                  <MenuItem value="client">Клиент</MenuItem>
+                  <MenuItem value="staff">Сервисный вход</MenuItem>
+                  <MenuItem value="client">Клиентский вход</MenuItem>
                 </Select>
               </FormControl>
             )}

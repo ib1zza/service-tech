@@ -19,7 +19,7 @@ export class AppealService {
 
   constructor(
     dataSource: DataSource,
-    private telegramService: TelegramService
+    private telegramService: TelegramService,
   ) {
     // Инициализация репозиториев
     this.appealRepo = new AppealRepository(dataSource);
@@ -37,7 +37,8 @@ export class AppealService {
     mechanism: string,
     problem: string,
     fioClient: string,
-    clientId: number
+    clientId: number,
+    priority: string,
   ) {
     // Проверка существования клиента
     const client = await this.clientRepo.findOne({ where: { id: clientId } });
@@ -49,11 +50,12 @@ export class AppealService {
 
     // Создание заявки
     const appeal = await this.appealRepo.createAppeal(
+      priority,
       mechanism,
       problem,
       fioClient,
       status,
-      client
+      client,
     );
 
     // Уведомление администратора
@@ -62,7 +64,7 @@ export class AppealService {
 
     await this.telegramService.sendMessageToAdmin(
       admin.phone_number_admin,
-      `Назначено новое задание: Заявка №${appeal.id} от ${client.company_name}`
+      `Назначено новое задание: Заявка №${appeal.id} от ${client.company_name}. Приоритет заявки: ${priority}.`,
     );
 
     return appeal;
@@ -99,7 +101,7 @@ export class AppealService {
     appealId: number,
     staffId: number,
     description: string,
-    fio_staff: string
+    fio_staff: string,
   ) {
     // Проверка существования сотрудника
     const staff = await this.staffRepo.findOne({ where: { id: staffId } });
@@ -114,7 +116,7 @@ export class AppealService {
       appealId,
       staff,
       description,
-      fio_staff
+      fio_staff,
     );
 
     // Получение клиента для уведомления
@@ -128,7 +130,7 @@ export class AppealService {
     // Уведомление клиента
     await this.telegramService.sendMessageToClient(
       client.phone_number_client,
-      `Заявка №${appeal.id} от ${client.company_name} выполнена (закрыта)`
+      `Заявка №${appeal.id} от ${client.company_name} выполнена (закрыта)`,
     );
 
     const statuses = await this.statusRepo.find({
@@ -167,7 +169,7 @@ export class AppealService {
   async cancelAppeal(
     appealId: number,
     userId: number,
-    cancelInitiator: string
+    cancelInitiator: string,
   ) {
     // Проверка существования пользователя
     const user = await this.clientRepo.findOne({ where: { id: userId } });
@@ -229,7 +231,7 @@ export class AppealService {
 
     await this.telegramService.sendMessageToAdmin(
       admin.phone_number_admin,
-      `Заявка №${prevAppeal.id} от ${client.company_name} отменена заказчиком.`
+      `Заявка №${prevAppeal.id} от ${client.company_name} отменена заказчиком.`,
     );
 
     if (prevAppeal.company_name_id) {

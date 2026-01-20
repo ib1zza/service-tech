@@ -123,15 +123,17 @@ export class AppealRepository extends Repository<Appeal> {
 
   // Создание нового обращения
   async createAppeal(
+    priority: string,
     mechanism: string, // Тип механизма
     problem: string, // Описание проблемы
     fioClient: string, // ФИО клиента
     status: AppealStatus, // Статус обращения
     client: Client, // Клиент
-    staff?: Staff // Сотрудник (необязательный)
+    staff?: Staff, // Сотрудник (необязательный)
   ): Promise<Appeal> {
     // Создаем новый экземпляр обращения
     const appeal = this.create({
+      priority: priority || "Средний",
       mechanism,
       problem,
       fio_client: fioClient,
@@ -148,7 +150,7 @@ export class AppealRepository extends Repository<Appeal> {
     id: number, // ID обращения
     staff: Staff, // Сотрудник, закрывающий обращение
     description: string, // Описание решения
-    fio_staff: string // ФИО сотрудника
+    fio_staff: string, // ФИО сотрудника
   ): Promise<Appeal> {
     // Находим обращение по ID
     const appeal = await this.findOne({

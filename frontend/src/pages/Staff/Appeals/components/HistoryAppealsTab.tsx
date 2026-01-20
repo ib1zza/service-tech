@@ -63,7 +63,7 @@ function getValue(obj: any, key: string): any {
 
 function getComparator<Key extends keyof any>(
   order: Order,
-  orderBy: Key
+  orderBy: Key,
 ): (a: { [key in Key]: any }, b: { [key in Key]: any }) => number {
   return order === "desc"
     ? (a, b) => descendingComparator(a, b, orderBy)
@@ -78,7 +78,7 @@ function applySortFilter<T>(
     mechanism: string;
     date: string;
     customer: string;
-  }
+  },
 ) {
   const filtered = array.filter((item: any) => {
     const numberMatch =
@@ -164,7 +164,7 @@ export default function HistoryAppealsTab() {
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedAppeal, setSelectedAppeal] = useState<AppealCompleted | null>(
-    null
+    null,
   );
 
   console.log("selectedAppeal", selectedAppeal);
@@ -230,7 +230,7 @@ export default function HistoryAppealsTab() {
   const filteredAndSortedAppeals = applySortFilter(
     appeals,
     getComparator(order, orderBy),
-    filters
+    filters,
   );
 
   if (loading) {
@@ -483,6 +483,10 @@ export default function HistoryAppealsTab() {
               <Typography>
                 <strong>Заказчик:</strong>{" "}
                 {selectedAppeal.company_name_id.company_name}
+              </Typography>
+              <Typography>
+                <strong>Приоритет:</strong>{" "}
+                {selectedAppeal.priority || "Средний"}
               </Typography>
               <Typography>
                 <strong>Дата создания:</strong>{" "}

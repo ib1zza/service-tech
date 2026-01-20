@@ -34,7 +34,7 @@ class ExcelExportService {
    */
   async generateClientReport(
     client: Client,
-    appeals: Appeal[]
+    appeals: Appeal[],
   ): Promise<string> {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("История заявок");
@@ -44,6 +44,7 @@ class ExcelExportService {
       { header: "ID", key: "id", width: 10 },
       { header: "Дата создания", key: "date_start", width: 20 },
       { header: "Дата закрытия", key: "date_close", width: 20 },
+      { header: "Приоритет", key: "priority", width: 15 },
       { header: "Кто сообщил", key: "client", width: 30 },
       { header: "Оборудование", key: "mechanism", width: 25 },
       { header: "Описание неисправности", key: "problem", width: 40 },
@@ -123,6 +124,7 @@ class ExcelExportService {
           fio_staff: appeal.fio_staff,
           description: parseAndFormatDate(appeal.appeal_desc),
           client: appeal.fio_client,
+          priority: appeal.priority,
         });
       });
 
@@ -172,12 +174,12 @@ class ExcelExportService {
    */
   async getOrCreateReport(
     client: Client,
-    appeals: Appeal[]
+    appeals: Appeal[],
   ): Promise<fs.ReadStream> {
     try {
       // Логируем процесс (теперь это всегда создание/обновление)
       console.log(
-        `Generating/Updating report for client: ${client.company_name}`
+        `Generating/Updating report for client: ${client.company_name}`,
       );
 
       // Просто вызываем генерацию.
