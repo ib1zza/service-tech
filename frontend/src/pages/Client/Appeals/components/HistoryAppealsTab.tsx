@@ -496,12 +496,6 @@ export default function HistoryAppealsTab() {
                 <strong>Заказчик:</strong>{" "}
                 {selectedAppeal.company_name_id.company_name}
               </Typography>
-              {/* --- НОВАЯ СТРОКА: ПРИОРИТЕТ --- */}
-              <Typography>
-                <strong>Приоритет:</strong>{" "}
-                {selectedAppeal.priority || "Средний"}
-              </Typography>
-              {/* ------------------------------ */}
               <Typography>
                 <strong>Дата создания:</strong>{" "}
                 {formatDateTime(selectedAppeal.date_start).date}{" "}
@@ -512,6 +506,14 @@ export default function HistoryAppealsTab() {
                 {formatDateTime(selectedAppeal.date_close).date}{" "}
                 {formatDateTime(selectedAppeal.date_close).time}
               </Typography>
+
+              {/* --- НОВАЯ СТРОКА: ПРИОРИТЕТ --- */}
+              <Typography>
+                <strong>Приоритет важности/срочности:</strong>{" "}
+                {selectedAppeal.priority || "Средний"}
+              </Typography>
+              {/* ------------------------------ */}
+
               <Typography>
                 <strong>Оборудование (механизм):</strong>{" "}
                 {selectedAppeal.mechanism}
