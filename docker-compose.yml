@@ -19,7 +19,6 @@ services:
 
   backend:
     build: ./backend
-    container_name: service-tech-backend
     ports:
       - "5000:5000"
     env_file:
@@ -34,9 +33,10 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: service-tech-frontend
     ports:
       - "5173:80"
+    depends_on:
+      - backend
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
 
