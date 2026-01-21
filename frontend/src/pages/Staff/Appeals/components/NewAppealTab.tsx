@@ -137,7 +137,9 @@ export default function NewAppealTab() {
 
           {/* --- НОВОЕ ПОЛЕ: ВЫБОР ПРИОРИТЕТА --- */}
           <FormControl fullWidth>
-            <FormLabel required>Приоритет:</FormLabel>
+            <FormLabel required>
+              Приоритет заявки по важности/срочности:
+            </FormLabel>
             <TextField
               select // Делает поле выпадающим списком
               name="priority"

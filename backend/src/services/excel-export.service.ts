@@ -1,7 +1,6 @@
 import ExcelJS from "exceljs";
 import { Appeal } from "../entities/Appeal";
 import { Client } from "../entities/Client";
-import { Staff } from "../entities/Staff";
 import fs from "fs";
 import path from "path";
 
@@ -39,7 +38,7 @@ class ExcelExportService {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("История заявок");
 
-    // Настройка колонок отчета
+    // 1. Настройка колонок (убрали фиксированную ширину для description, так как будем считать её ниже)
     worksheet.columns = [
       { header: "ID", key: "id", width: 10 },
       { header: "Дата создания", key: "date_start", width: 20 },
@@ -52,30 +51,26 @@ class ExcelExportService {
       { header: "Принял заявку", key: "staff_open", width: 30 },
       { header: "Закрыл заявку", key: "staff_close", width: 30 },
       { header: "Исполнитель", key: "fio_staff", width: 30 },
-      { header: "Выполненные работы", key: "description", width: 50 },
+      { header: "Выполненные работы", key: "description", width: 20 }, // Базовая ширина
     ];
+
+    // Стилизация заголовков (Делаем жирным первую строку)
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.alignment = { horizontal: "center", vertical: "middle" };
 
     worksheet.columns.forEach((column) => {
       column.alignment = { horizontal: "left", vertical: "middle" };
     });
 
+    // Функция форматирования даты (без изменений)
     function parseAndFormatDate(str: string) {
-      // Находим начало и конец даты
       const startIndex = str.indexOf("[");
       const endIndex = str.indexOf("]");
+      if (startIndex === -1 || endIndex === -1) return str;
 
-      // Если нет квадратных скобок, возвращаем исходную строку
-      if (startIndex === -1 || endIndex === -1) {
-        return str;
-      }
-
-      // Извлекаем дату между скобками
       const dateStr = str.substring(startIndex + 1, endIndex);
-
-      // Создаем объект Date
       const date = new Date(dateStr);
-
-      // Форматируем дату
       const formatter = new Intl.DateTimeFormat("ru-RU", {
         year: "numeric",
         month: "2-digit",
@@ -86,36 +81,26 @@ class ExcelExportService {
       });
 
       const formattedDate = formatter.format(date);
-
-      // Собираем строку без квадратных скобок
       const before = str.substring(0, startIndex);
       const after = str.substring(endIndex + 1);
-
-      return before + formattedDate + after;
+      return before + formattedDate + " (Мск)" + after;
     }
 
-    // Добавление данных в отчет
+    // Добавление данных
     [...appeals]
-      .sort((a, b) => b.date_start.getTime() - a.date_start.getTime()) // Сортировка по дате (новые сверху)
+      .sort((a, b) => b.date_start.getTime() - a.date_start.getTime())
       .forEach((appeal) => {
         worksheet.addRow({
           id: appeal.id,
-          date_start: appeal.date_start.toLocaleDateString("ru-RU", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            timeZone: "Europe/Moscow",
-          }),
-          date_close: appeal.date_close.toLocaleDateString("ru-RU", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            timeZone: "Europe/Moscow",
-          }),
+          date_start:
+            appeal.date_start.toLocaleString("ru-RU", {
+              timeZone: "Europe/Moscow",
+            }) + " (Мск)",
+          date_close: appeal.date_close
+            ? appeal.date_close.toLocaleString("ru-RU", {
+                timeZone: "Europe/Moscow",
+              }) + " (Мск)"
+            : "-",
           mechanism: appeal.mechanism,
           problem: appeal.problem,
           status: appeal.status?.st,
@@ -128,11 +113,25 @@ class ExcelExportService {
         });
       });
 
+    // 2. АВТОПОДБОР ШИРИНЫ для колонки L (description)
+    let maxDescriptionLength = 0;
+    const descriptionColumn = worksheet.getColumn("description");
+
+    descriptionColumn.eachCell({ includeEmpty: true }, (cell) => {
+      const columnValue = cell.value ? cell.value.toString() : "";
+      if (columnValue.length > maxDescriptionLength) {
+        maxDescriptionLength = columnValue.length;
+      }
+    });
+
+    // Устанавливаем ширину: количество символов + небольшой запас (2-5 единиц)
+    // Ограничим максимальную ширину (например, 100), чтобы Excel не стал бесконечным, если текст очень длинный
+    descriptionColumn.width =
+      maxDescriptionLength > 100 ? 100 : maxDescriptionLength + 5;
+
     // Формирование имени файла
     const fileName = `${client.company_name}_report.xlsx`;
     const filePath = path.join(this.reportsDir, fileName);
-
-    console.log(`Создан отчет: ${filePath}`, fileName);
 
     try {
       await workbook.xlsx.writeFile(filePath);
