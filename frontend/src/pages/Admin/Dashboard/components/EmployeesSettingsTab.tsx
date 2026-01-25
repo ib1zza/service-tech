@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"; // Импорт хуков React: useState для управления состоянием, useEffect для выполнения побочных эффектов
+import { useState, useEffect, useMemo } from "react"; // Добавил useMemo для сортировки
 import {
   Box,
   Button,
@@ -16,157 +16,187 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
-  InputAdornment, // !!! НОВЫЙ ИМПОРТ: для добавления кнопки в поле ввода
-} from "@mui/material"; // Импорт компонентов Material-UI для построения пользовательского интерфейса
-import AddIcon from "@mui/icons-material/Add"; // Иконка "Добавить"
-import EditIcon from "@mui/icons-material/Edit"; // Иконка "Редактировать"
-import DeleteIcon from "@mui/icons-material/Delete"; // Иконка "Удалить"
-import Visibility from "@mui/icons-material/Visibility"; // !!! НОВЫЙ ИМПОРТ: Иконка "Показать пароль"
-import VisibilityOff from "@mui/icons-material/VisibilityOff"; // !!! НОВЫЙ ИМПОРТ: Иконка "Скрыть пароль"
-import { staffApi, StaffFromServer } from "../../../../services/requests"; // Импорт API для взаимодействия с сотрудниками и типа данных сотрудника
+  InputAdornment,
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import { staffApi, StaffFromServer } from "../../../../services/requests";
 
-// Компонент `EmployeesSettingsTab` позволяет администратору управлять списком сотрудников: просматривать, добавлять, редактировать и удалять.
 export default function EmployeesSettingsTab() {
-  // Состояние для хранения списка сотрудников, загруженных с сервера.
   const [staffMembers, setStaffMembers] = useState<StaffFromServer[]>([]);
-  // Состояние для данных сотрудника, который в данный момент редактируется.
   const [editingStaff, setEditingStaff] = useState<StaffFromServer | null>(
-    null
+    null,
   );
-  // Состояние для данных нового сотрудника, который будет добавлен.
   const [newStaff, setNewStaff] = useState<
-    Pick<StaffFromServer, "fio_staff" | "login_staff" | "password">
-  >({ fio_staff: "", login_staff: "", password: "" });
-  // Состояние для управления видимостью диалогового окна добавления/редактирования.
+    Pick<StaffFromServer, "fio_staff" | "login_staff" | "password_plain">
+  >({ fio_staff: "", login_staff: "", password_plain: "" });
   const [openDialog, setOpenDialog] = useState(false);
-  // Флаг, указывающий, находится ли диалог в режиме редактирования (true) или добавления (false).
   const [isEditing, setIsEditing] = useState(false);
-  // Флаг, указывающий на состояние загрузки данных сотрудников.
   const [loading, setLoading] = useState(true);
-  // Состояние для хранения ошибок валидации полей формы.
   const [errors, setErrors] = useState({
     fio_staff: false,
     login_staff: false,
     password: false,
   });
-
-  // !!! НОВОЕ СОСТОЯНИЕ: для переключения видимости пароля.
   const [showPassword, setShowPassword] = useState(false);
 
-  // Хук `useEffect` для загрузки списка сотрудников при первом монтировании компонента.
+  // Сортировка сотрудников по алфавиту по ФИО
+  const sortedStaffMembers = useMemo(() => {
+    return [...staffMembers].sort((a, b) =>
+      a.fio_staff.localeCompare(b.fio_staff, "ru"),
+    );
+  }, [staffMembers]);
+
   useEffect(() => {
     fetchStaffMembers();
   }, []);
 
-  // Асинхронная функция для получения списка сотрудников с сервера.
   const fetchStaffMembers = async () => {
-    setLoading(true); // Устанавливаем состояние загрузки.
+    setLoading(true);
     try {
-      const staff = await staffApi.getAllStaff(); // Выполняем запрос к API.
-      setStaffMembers(staff); // Обновляем состояние списка сотрудников.
+      const staff = await staffApi.getAllStaff();
+      setStaffMembers(staff);
     } catch (error) {
       console.error("Ошибка при загрузке сотрудников:", error);
     } finally {
-      setLoading(false); // Снимаем состояние загрузки.
+      setLoading(false);
     }
   };
 
-  // Функция для валидации полей формы сотрудника.
+  // Обновленная функция валидации
   const validateInputs = (
-    data: Pick<StaffFromServer, "fio_staff" | "login_staff" | "password">
+    data: Pick<StaffFromServer, "fio_staff" | "login_staff" | "password_plain">,
   ) => {
+    const isPasswordEmpty =
+      !data.password_plain || data.password_plain.length === 0;
+
     const newErrors = {
       fio_staff: data.fio_staff.length === 0 || data.fio_staff.length > 40,
       login_staff: data.login_staff.length < 2 || data.login_staff.length > 10,
-      password: data.password
-        ? data.password.length < 2 || data.password.length > 10
-        : false, // Пароль валидируется, если он не пустой
+      // При добавлении пароль обязателен, при редактировании - нет
+      password:
+        !isEditing && isPasswordEmpty
+          ? true
+          : isPasswordEmpty
+            ? false // При редактировании пустой пароль - ок
+            : data.password_plain.length < 2 || data.password_plain.length > 10,
     };
-    setErrors(newErrors); // Обновляем состояние ошибок.
-    return !Object.values(newErrors).some(Boolean); // Возвращаем `true`, если нет ошибок.
+
+    setErrors(newErrors);
+    return !Object.values(newErrors).some(Boolean);
   };
 
-  // Открывает диалог для добавления нового сотрудника.
   const handleAddStaff = () => {
-    setNewStaff({ fio_staff: "", login_staff: "", password: "" }); // Сбрасываем данные нового сотрудника.
-    setIsEditing(false); // Устанавливаем режим добавления.
-    setOpenDialog(true); // Открываем диалог.
-    setShowPassword(false); // Скрываем пароль по умолчанию при открытии.
+    setNewStaff({ fio_staff: "", login_staff: "", password_plain: "" });
+    setIsEditing(false);
+    setOpenDialog(true);
+    setShowPassword(false);
+    // Сброс ошибок
+    setErrors({
+      fio_staff: false,
+      login_staff: false,
+      password: false,
+    });
   };
 
-  // Открывает диалог для редактирования существующего сотрудника.
   const handleEditStaff = (staff: StaffFromServer) => {
-    setEditingStaff(staff); // Устанавливаем сотрудника для редактирования.
-    setIsEditing(true); // Устанавливаем режим редактирования.
-    setOpenDialog(true); // Открываем диалог.
-    setShowPassword(false); // Скрываем пароль по умолчанию при открытии.
+    // Устанавливаем сотрудника для редактирования, включая текущий пароль
+    // Если пароль не должен отображаться, используем пустую строку
+    setEditingStaff({
+      ...staff,
+      password: "", // Оставляем пустым при редактировании
+    });
+    setIsEditing(true);
+    setOpenDialog(true);
+    setShowPassword(false);
+    // Сброс ошибок
+    setErrors({
+      fio_staff: false,
+      login_staff: false,
+      password: false,
+    });
   };
 
-  // Обработчик удаления сотрудника.
   const handleDeleteStaff = async (id: number) => {
     if (window.confirm("Вы уверены, что хотите удалить этого сотрудника?")) {
-      // Запрос подтверждения.
       try {
-        await staffApi.deleteStaff(id); // Выполняем запрос на удаление.
-        fetchStaffMembers(); // Обновляем список сотрудников после удаления.
+        await staffApi.deleteStaff(id);
+        fetchStaffMembers();
       } catch (error) {
         console.error("Ошибка при удалении сотрудника:", error);
       }
     }
   };
 
-  // Обработчик сохранения (добавления или обновления) сотрудника.
   const handleSaveStaff = async () => {
-    const data = isEditing ? editingStaff : newStaff; // Определяем, какие данные сохранять.
-    // При редактировании, если пароль пуст, его не валидируем как обязательный.
+    const data = isEditing ? editingStaff : newStaff;
+
+    if (!data) return;
+
+    // Для валидации при редактировании используем заглушку, если пароль пустой
     const validationData =
-      isEditing && editingStaff?.password === ""
-        ? ({ ...data, password: "dummy_valid_password" } as typeof data) // Заглушка для прохождения валидации, если поле пустое
+      isEditing && data.password_plain === ""
+        ? ({ ...data, password_plain: "dummy_valid_password" } as typeof data)
         : data;
 
-    if (!data || !validateInputs(validationData)) return; // Валидируем данные перед сохранением.
+    if (!validateInputs(validationData)) return;
 
     try {
       if (isEditing && editingStaff) {
-        // Если режим редактирования, обновляем сотрудника.
-        await staffApi.updateStaff(editingStaff.id, {
+        // Формируем данные для обновления
+        const updateData: any = {
           fio: editingStaff.fio_staff,
           login: editingStaff.login_staff,
-          ...(editingStaff.password && { password: editingStaff.password }), // Обновляем пароль, только если он был введен.
-        });
+        };
+
+        // Добавляем пароль только если он был введен (не пустой)
+        if (
+          editingStaff.password_plain &&
+          editingStaff.password_plain.trim() !== ""
+        ) {
+          updateData.password = editingStaff.password_plain;
+        }
+
+        await staffApi.updateStaff(editingStaff.id, updateData);
       } else {
-        // Если режим добавления, создаем нового сотрудника.
         await staffApi.createStaff({
           fio: newStaff.fio_staff!,
           login: newStaff.login_staff!,
-          password: newStaff.password || "", // Пароль может быть пустым при создании, если не обязателен.
+          password: newStaff.password_plain || "",
         });
       }
-      fetchStaffMembers(); // Обновляем список сотрудников.
-      setOpenDialog(false); // Закрываем диалог.
-      setShowPassword(false); // Скрываем пароль
+
+      fetchStaffMembers();
+      setOpenDialog(false);
+      setShowPassword(false);
     } catch (error) {
       console.error("Ошибка при сохранении сотрудника:", error);
     }
   };
 
-  // Универсальный обработчик изменения полей ввода в диалоге.
   const handleInputChange = (field: keyof StaffFromServer, value: string) => {
     if (isEditing && editingStaff) {
-      setEditingStaff({ ...editingStaff, [field]: value }); // Обновляем данные редактируемого сотрудника.
+      setEditingStaff({ ...editingStaff, [field]: value });
+      // Валидация при вводе для редактирования
+      const tempData = { ...editingStaff, [field]: value };
+      validateInputs(tempData);
     } else {
-      setNewStaff({ ...newStaff, [field]: value }); // Обновляем данные нового сотрудника.
+      setNewStaff({ ...newStaff, [field]: value });
+      // Валидация при вводе для добавления
+      const tempData = { ...newStaff, [field]: value };
+      validateInputs(tempData);
     }
   };
 
-  // !!! НОВЫЙ ОБРАБОТЧИК: переключение видимости пароля.
   const handleClickShowPassword = () => {
     setShowPassword((prev) => !prev);
   };
 
   return (
     <Box>
-      {/* Кнопка "Добавить сотрудника" */}
       <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
         <Button
           variant="contained"
@@ -177,7 +207,6 @@ export default function EmployeesSettingsTab() {
         </Button>
       </Box>
 
-      {/* Условный рендеринг: отображение индикатора загрузки или таблицы сотрудников. */}
       {loading ? (
         <Box display="flex" justifyContent="center">
           <CircularProgress />
@@ -202,14 +231,13 @@ export default function EmployeesSettingsTab() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {/* Отображение списка сотрудников в таблице. */}
-              {staffMembers.map((staff) => (
+              {/* Используем отсортированный массив */}
+              {sortedStaffMembers.map((staff) => (
                 <TableRow key={staff.id}>
                   <TableCell>{staff.fio_staff}</TableCell>
                   <TableCell>{staff.login_staff}</TableCell>
-                  <TableCell>••••••••</TableCell> {/* Пароль скрыт */}
+                  <TableCell>••••••••</TableCell>
                   <TableCell>
-                    {/* Кнопки редактирования и удаления сотрудника. */}
                     <IconButton onClick={() => handleEditStaff(staff)}>
                       <EditIcon />
                     </IconButton>
@@ -227,13 +255,12 @@ export default function EmployeesSettingsTab() {
         </TableContainer>
       )}
 
-      {/* Диалоговое окно для добавления или редактирования сотрудника. */}
       <Dialog
         open={openDialog}
         onClose={() => {
           setOpenDialog(false);
           setShowPassword(false);
-        }} // Скрываем пароль при закрытии
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -242,7 +269,6 @@ export default function EmployeesSettingsTab() {
         </DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
-            {/* Поля ввода для данных сотрудника. */}
             <TextField
               fullWidth
               label="Фамилия И. О. (до 40 символов)"
@@ -280,20 +306,24 @@ export default function EmployeesSettingsTab() {
                   ? "Новый пароль (оставьте пустым, чтобы не менять)"
                   : "Пароль (2-10 символов)"
               }
-              // !!! ИЗМЕНЕНИЕ: тип поля зависит от состояния showPassword
               type={showPassword ? "text" : "password"}
               value={
                 isEditing
-                  ? editingStaff?.password || ""
-                  : newStaff.password || ""
+                  ? editingStaff?.password_plain || ""
+                  : newStaff.password_plain || ""
               }
-              onChange={(e) => handleInputChange("password", e.target.value)}
+              onChange={(e) =>
+                handleInputChange("password_plain", e.target.value)
+              }
               error={errors.password}
               helperText={
-                errors.password ? "Пароль должен быть от 2 до 10 символов" : ""
+                errors.password
+                  ? isEditing
+                    ? "Если вводите пароль, он должен быть от 2 до 10 символов"
+                    : "Пароль должен быть от 2 до 10 символов"
+                  : ""
               }
               margin="normal"
-              // !!! НОВОЕ: Добавление иконки для переключения видимости
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -315,11 +345,10 @@ export default function EmployeesSettingsTab() {
           <Button
             onClick={handleSaveStaff}
             variant="contained"
-            // Кнопка сохранения отключена, если есть ошибки валидации.
             disabled={
               errors.fio_staff ||
               errors.login_staff ||
-              (!isEditing && errors.password) // Пароль обязателен только при создании.
+              (!isEditing && errors.password)
             }
           >
             Сохранить

@@ -46,7 +46,7 @@ export class StaffService {
       password,
       plainPassword,
       fio,
-      role
+      role,
     );
   }
 
@@ -70,12 +70,12 @@ export class StaffService {
   async removeStaff(staffId: number) {
     await this.appealRepo.update(
       { fio_staff_close_id: { id: staffId } },
-      { fio_staff_close_id: null as any }
+      { fio_staff_close_id: null as any },
     );
 
     await this.appealRepo.update(
       { fio_staff_open_id: { id: staffId } },
-      { fio_staff_open_id: null as any }
+      { fio_staff_open_id: null as any },
     );
 
     return this.staffRepo.removeStaff(staffId);
@@ -94,9 +94,24 @@ export class StaffService {
     staffId: number,
     fio?: string,
     login?: string,
-    password?: string
+    password?: string,
   ) {
-    return this.staffRepo.editStaff(staffId, fio, login, password);
+    const staff = await this.staffRepo.findByIdWithRole(staffId);
+    if (!staff) throw new Error("staff не найден");
+
+    let passwordHash;
+
+    if (password) {
+      passwordHash = await bcrypt.hash(password, 10);
+    }
+
+    return this.staffRepo.editStaff(
+      staffId,
+      fio,
+      login,
+      passwordHash,
+      password,
+    );
   }
 
   /**
@@ -134,7 +149,7 @@ export class StaffService {
       staffId,
       undefined,
       undefined,
-      passwordHash
+      passwordHash,
     );
   }
 }

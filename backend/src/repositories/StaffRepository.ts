@@ -23,7 +23,7 @@ export class StaffRepository extends Repository<Staff> {
     password: string,
     plainPassword: string,
     fio: string,
-    role: Role
+    role: Role,
   ): Promise<Staff> {
     const staff = this.create({
       login_staff: login,
@@ -52,12 +52,15 @@ export class StaffRepository extends Repository<Staff> {
     staffId: number,
     fio?: string,
     login?: string,
-    password?: string
+    passwordHash?: string,
+    passwordPlain?: string,
   ): Promise<void> {
     const updatedData: Record<string, string> = {};
     if (fio) updatedData["fio_staff"] = fio;
     if (login) updatedData["login_staff"] = login;
-    if (password) updatedData["password"] = password;
+    if (passwordHash) updatedData["password"] = passwordHash;
+    if (passwordPlain) updatedData["password_plain"] = passwordPlain;
+
     await this.update(staffId, updatedData);
   }
 }

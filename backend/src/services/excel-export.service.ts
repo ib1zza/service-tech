@@ -41,8 +41,8 @@ class ExcelExportService {
     // 1. Настройка колонок (убрали фиксированную ширину для description, так как будем считать её ниже)
     worksheet.columns = [
       { header: "ID", key: "id", width: 10 },
-      { header: "Дата создания", key: "date_start", width: 20 },
-      { header: "Дата закрытия", key: "date_close", width: 20 },
+      { header: "Дата создания", key: "date_start", width: 30 },
+      { header: "Дата закрытия", key: "date_close", width: 30 },
       { header: "Приоритет", key: "priority", width: 15 },
       { header: "Кто сообщил", key: "client", width: 30 },
       { header: "Оборудование", key: "mechanism", width: 25 },
