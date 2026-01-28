@@ -12,11 +12,27 @@ import {
   DialogContent,
   DialogActions,
   DialogContentText,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
 } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Appeal, appealApi } from "../../../../services/requests";
 import { useAppSelector } from "../../../../store/hooks";
+
+// Веса для приоритетов (чем выше число, тем выше в списке)
+const priorityWeights: Record<string, number> = {
+  Критичный: 4,
+  Высокий: 3,
+  Средний: 2,
+  Низкий: 1,
+};
+
+// Типизация для вариантов сортировки
+type SortVariant = "priority" | "id_asc" | "id_desc";
 
 export default function PostedAppealsTab() {
   const [appeals, setAppeals] = useState<Appeal[]>([]);
@@ -26,22 +42,54 @@ export default function PostedAppealsTab() {
   const [selectedAppeal, setSelectedAppeal] = useState<Appeal | null>(null);
   const { user } = useAppSelector((state) => state.auth);
 
+  // Состояние сортировки (по умолчанию - по приоритету)
+  const [sortType, setSortType] = useState<SortVariant>("priority");
+
   // --- Функция для определения цвета приоритета ---
   const getPriorityColor = (
     priority: string,
   ): "error" | "warning" | "info" | "success" | "default" => {
     switch (priority) {
       case "Критичный":
-        return "error"; // Красный
+        return "error";
       case "Высокий":
-        return "warning"; // Оранжевый
+        return "warning";
       case "Средний":
-        return "info"; // Синий
+        return "info";
       case "Низкий":
-        return "success"; // Зеленый
+        return "success";
       default:
         return "default";
     }
+  };
+
+  // --- Логика сортировки ---
+  const sortedAppeals = useMemo(() => {
+    const data = [...appeals];
+
+    switch (sortType) {
+      case "priority":
+        return data.sort((a, b) => {
+          const weightA = priorityWeights[a.priority] || 0;
+          const weightB = priorityWeights[b.priority] || 0;
+          // 1. Сначала по весу (критичные выше)
+          if (weightB !== weightA) return weightB - weightA;
+          // 2. Если приоритеты равны, то ранние выше
+          return a.id - b.id;
+        });
+      case "id_asc":
+        // По номерам (ранние выше)
+        return data.sort((a, b) => a.id - b.id);
+      case "id_desc":
+        // По номерам (поздние выше)
+        return data.sort((a, b) => b.id - a.id);
+      default:
+        return data;
+    }
+  }, [appeals, sortType]);
+
+  const handleSortChange = (event: SelectChangeEvent) => {
+    setSortType(event.target.value as SortVariant);
   };
 
   const handleOpenDialog = (appeal: Appeal) => {
@@ -114,17 +162,43 @@ export default function PostedAppealsTab() {
 
   return (
     <Box sx={{ width: "100%" }}>
-      <Typography variant="h6" gutterBottom>
-        Размещенные заявки ({appeals.length})
-      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+          flexWrap: "wrap",
+          gap: 2,
+        }}
+      >
+        <Typography variant="h6">
+          Размещенные заявки ({appeals.length})
+        </Typography>
 
-      {appeals.length === 0 ? (
+        {/* ПАНЕЛЬ СОРТИРОВКИ */}
+        <FormControl size="small" sx={{ minWidth: 300 }}>
+          <InputLabel id="sort-label">Сортировка заявок:</InputLabel>
+          <Select
+            labelId="sort-label"
+            value={sortType}
+            label="Сортировка заявок:"
+            onChange={handleSortChange}
+          >
+            <MenuItem value="priority">По приоритету (критичные выше)</MenuItem>
+            <MenuItem value="id_asc">По номерам (ранние выше)</MenuItem>
+            <MenuItem value="id_desc">По номерам (поздние выше)</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
+
+      {sortedAppeals.length === 0 ? (
         <Paper elevation={3} sx={{ p: 3, textAlign: "center" }}>
           <Typography variant="body1">Нет новых заявок</Typography>
         </Paper>
       ) : (
         <Box sx={{ mt: 2 }}>
-          {appeals.map((appeal) => {
+          {sortedAppeals.map((appeal) => {
             const { date, time } = formatDateTime(appeal.date_start);
 
             return (
@@ -133,20 +207,20 @@ export default function PostedAppealsTab() {
                   sx={{
                     display: "flex",
                     justifyContent: "space-between",
-                    alignItems: "flex-start", // Выравнивание по верхнему краю
+                    alignItems: "flex-start",
                   }}
                 >
                   <Typography variant="h6">
                     Заявка №{appeal.id} - {appeal.company_name_id.company_name}
                   </Typography>
 
-                  {/* Контейнер для тегов Приоритет и Статус */}
                   <Box sx={{ display: "flex", gap: 1 }}>
                     <Chip
                       label={`Приоритет: ${appeal.priority || "Средний"}`}
                       color={getPriorityColor(appeal.priority || "Средний")}
                       variant="outlined"
                       size="small"
+                      sx={{ fontWeight: "bold" }}
                     />
                     <Chip
                       label={
@@ -219,7 +293,7 @@ export default function PostedAppealsTab() {
         </Box>
       )}
 
-      {/* Диалоговое окно подтверждения (без изменений) */}
+      {/* Диалоговое окно подтверждения */}
       <Dialog
         open={dialogOpen}
         onClose={handleCloseDialog}

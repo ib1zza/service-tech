@@ -12,11 +12,27 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
 } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { appealApi, AppealInProgress } from "../../../../services/requests";
 import { useAppSelector } from "../../../../store/hooks";
+
+// Веса для приоритетов (чем выше число, тем выше в списке)
+const priorityWeights: Record<string, number> = {
+  Критичный: 4,
+  Высокий: 3,
+  Средний: 2,
+  Низкий: 1,
+};
+
+// Типы сортировки
+type SortVariant = "priority" | "id_asc" | "id_desc";
 
 export default function AppealsInWorkTab() {
   const [appeals, setAppeals] = useState<AppealInProgress[]>([]);
@@ -30,22 +46,50 @@ export default function AppealsInWorkTab() {
   const [executors, setExecutors] = useState("");
   const { user } = useAppSelector((state) => state.auth);
 
+  // Состояние сортировки (по умолчанию - по приоритету)
+  const [sortType, setSortType] = useState<SortVariant>("priority");
+
   // --- Функция для определения цвета приоритета ---
   const getPriorityColor = (
     priority: string,
   ): "error" | "warning" | "info" | "success" | "default" => {
     switch (priority) {
       case "Критичный":
-        return "error"; // Красный
+        return "error";
       case "Высокий":
-        return "warning"; // Оранжевый
+        return "warning";
       case "Средний":
-        return "info"; // Синий
+        return "info";
       case "Низкий":
-        return "success"; // Зеленый
+        return "success";
       default:
         return "default";
     }
+  };
+
+  // --- ЛОГИКА СОРТИРОВКИ ---
+  const sortedAppeals = useMemo(() => {
+    const data = [...appeals];
+
+    switch (sortType) {
+      case "priority":
+        return data.sort((a, b) => {
+          const weightA = priorityWeights[a.priority] || 0;
+          const weightB = priorityWeights[b.priority] || 0;
+          if (weightB !== weightA) return weightB - weightA;
+          return a.id - b.id; // Если приоритет равен, ранние выше
+        });
+      case "id_asc":
+        return data.sort((a, b) => a.id - b.id);
+      case "id_desc":
+        return data.sort((a, b) => b.id - a.id);
+      default:
+        return data;
+    }
+  }, [appeals, sortType]);
+
+  const handleSortChange = (event: SelectChangeEvent) => {
+    setSortType(event.target.value as SortVariant);
   };
 
   const handleOpenDialog = (appeal: AppealInProgress) => {
@@ -124,17 +168,41 @@ export default function AppealsInWorkTab() {
 
   return (
     <Box sx={{ width: "100%" }}>
-      <Typography variant="h6" gutterBottom>
-        Заявки в работе ({appeals.length})
-      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+          flexWrap: "wrap",
+          gap: 2,
+        }}
+      >
+        <Typography variant="h6">Заявки в работе ({appeals.length})</Typography>
 
-      {appeals.length === 0 ? (
+        {/* ПАНЕЛЬ СОРТИРОВКИ */}
+        <FormControl size="small" sx={{ minWidth: 300 }}>
+          <InputLabel id="sort-label">Сортировка заявок:</InputLabel>
+          <Select
+            labelId="sort-label"
+            value={sortType}
+            label="Сортировка заявок:"
+            onChange={handleSortChange}
+          >
+            <MenuItem value="priority">По приоритету (критичные выше)</MenuItem>
+            <MenuItem value="id_asc">По номерам (ранние выше)</MenuItem>
+            <MenuItem value="id_desc">По номерам (поздние выше)</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
+
+      {sortedAppeals.length === 0 ? (
         <Paper elevation={3} sx={{ p: 3, textAlign: "center" }}>
           <Typography variant="body1">Нет заявок в работе</Typography>
         </Paper>
       ) : (
         <Box sx={{ mt: 2 }}>
-          {appeals.map((appeal) => {
+          {sortedAppeals.map((appeal) => {
             const { date, time } = formatDateTime(appeal.date_start);
 
             return (
@@ -143,20 +211,20 @@ export default function AppealsInWorkTab() {
                   sx={{
                     display: "flex",
                     justifyContent: "space-between",
-                    alignItems: "flex-start", // Выравнивание по верхнему краю
+                    alignItems: "flex-start",
                   }}
                 >
                   <Typography variant="h6">
                     Заявка №{appeal.id} - {appeal.company_name_id.company_name}
                   </Typography>
 
-                  {/* Контейнер для тегов Приоритет и Статус */}
                   <Box sx={{ display: "flex", gap: 1 }}>
                     <Chip
                       label={`Приоритет: ${appeal.priority || "Средний"}`}
                       color={getPriorityColor(appeal.priority || "Средний")}
                       variant="outlined"
                       size="small"
+                      sx={{ fontWeight: "bold" }}
                     />
                     <Chip label="В работе" color="warning" size="small" />
                   </Box>
@@ -224,7 +292,7 @@ export default function AppealsInWorkTab() {
         </Box>
       )}
 
-      {/* Диалог закрытия (без изменений) */}
+      {/* Диалог закрытия */}
       <Dialog
         open={dialogOpen}
         onClose={handleCloseDialog}
@@ -241,6 +309,7 @@ export default function AppealsInWorkTab() {
               fullWidth
               value={workDescription}
               onChange={(e) => setWorkDescription(e.target.value)}
+              inputProps={{ maxLength: 256 }}
               helperText={`${workDescription.length}/256 символов`}
             />
             <TextField
@@ -248,6 +317,7 @@ export default function AppealsInWorkTab() {
               fullWidth
               value={executors}
               onChange={(e) => setExecutors(e.target.value)}
+              inputProps={{ maxLength: 56 }}
               helperText={`${executors.length}/56 символов`}
             />
             <Typography variant="body1">

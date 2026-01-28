@@ -53,7 +53,7 @@ export class TelegramService {
         if (!client && !admin) {
           return this.bot.sendMessage(
             chatId,
-            "❌ Клиент с таким номером телефона не найден"
+            "❌ Клиент с таким номером телефона не найден",
           );
         }
 
@@ -67,8 +67,8 @@ export class TelegramService {
           // Отправляем клиенту сообщение об успешной привязке
           this.bot.sendMessage(
             chatId,
-            "✅ Вы успешно привязали Telegram-аккаунт к вашему профилю!\n" +
-              "Теперь вы будете получать уведомления здесь."
+            "Вас приветствует СервисБот! ✅ Вы успешно привязали Telegram-аккаунт к вашему профилю!\n" +
+              "Теперь вы будете получать уведомления здесь.",
           );
 
           // Логируем успешную привязку
@@ -85,8 +85,8 @@ export class TelegramService {
           // Отправляем админу сообщение об успешной привязке
           this.bot.sendMessage(
             chatId,
-            "✅ Вы успешно привязали Telegram-аккаунт к вашему профилю!\n" +
-              "Теперь вы будете получать уведомления здесь."
+            "Вас приветствует СервисБот! ✅ Вы успешно привязали Telegram-аккаунт к вашему профилю!\n" +
+              "Теперь вы будете получать уведомления здесь.",
           );
 
           // Логируем успешную привязку
@@ -116,7 +116,7 @@ export class TelegramService {
    */
   public async sendMessageToClient(
     phone: string,
-    message: string
+    message: string,
   ): Promise<boolean> {
     try {
       // Ищем клиента в базе данных по номеру телефона
@@ -145,7 +145,7 @@ export class TelegramService {
    */
   public async sendMessageToAdmin(
     phone: string,
-    message: string
+    message: string,
   ): Promise<boolean> {
     try {
       // Ищем админа в базе данных по номеру телефона
