@@ -27,7 +27,7 @@ export class ClientService {
    */
   async sendTelegramNotification(
     phone: string,
-    message: string
+    message: string,
   ): Promise<boolean> {
     return this.telegramService.sendMessageToClient(phone, message);
   }
@@ -39,7 +39,8 @@ export class ClientService {
     login: string,
     plainPassword: string,
     phone: string,
-    companyName: string
+    companyName: string,
+    email: string | null,
   ): Promise<Client> {
     // Проверка уникальности логина
     const exists = await this.clientRepo.findByLogin(login);
@@ -59,7 +60,8 @@ export class ClientService {
       plainPassword,
       phone,
       companyName,
-      role
+      role,
+      email,
     );
   }
 
@@ -108,7 +110,8 @@ export class ClientService {
       phone?: string;
       login?: string;
       plainPassword?: string;
-    }
+      email?: string;
+    },
   ): Promise<void> {
     // Проверка существования клиента
     const client = await this.clientRepo.findByIdWithRole(clientId);
@@ -120,6 +123,7 @@ export class ClientService {
       login?: string;
       passwordHash?: string;
       plainPassword?: string;
+      email?: string;
     } = {};
 
     // Обновление названия компании
@@ -145,6 +149,10 @@ export class ClientService {
       updatePayload.plainPassword = updateData.plainPassword;
     }
 
+    if (updateData.email) updatePayload.email = updateData.email;
+
+    console.log("updatePayload check", updatePayload);
+
     // Сохранение изменений
     await this.clientRepo.editClient(clientId, updatePayload);
   }
@@ -155,7 +163,7 @@ export class ClientService {
   async updateClientPassword(
     clientId: number,
     currentPassword: string,
-    newPassword: string
+    newPassword: string,
   ): Promise<void> {
     // Проверка существования клиента
     const client = await this.clientRepo.findByIdWithRole(clientId);
@@ -164,7 +172,7 @@ export class ClientService {
     // Проверка текущего пароля
     const isPasswordValid = await bcrypt.compare(
       currentPassword,
-      client.password_hash
+      client.password_hash,
     );
     if (!isPasswordValid) throw new Error("Текущий пароль неверен");
 
@@ -175,7 +183,7 @@ export class ClientService {
     await this.clientRepo.updateClientPassword(
       clientId,
       newPasswordHash,
-      newPassword
+      newPassword,
     );
   }
 
@@ -200,7 +208,7 @@ export class ClientService {
    */
   async validateClientCredentials(
     login: string,
-    password: string
+    password: string,
   ): Promise<Client | null> {
     const client = await this.clientRepo.findByLogin(login);
     if (!client) return null;

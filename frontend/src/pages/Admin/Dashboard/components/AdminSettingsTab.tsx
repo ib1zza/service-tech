@@ -32,6 +32,7 @@ export default function AdminSettingsTab() {
   const [adminInfo, setAdminInfo] = useState({
     login: "",
     phone: "",
+    email: "", // ➕
     password: "",
   });
 
@@ -39,6 +40,7 @@ export default function AdminSettingsTab() {
     newLogin: "",
     newPassword: "",
     newPhone: "",
+    newEmail: "", // ➕
   });
 
   const [aboutInfo, setAboutInfo] = useState<string>("");
@@ -52,6 +54,7 @@ export default function AdminSettingsTab() {
     login: false,
     password: false,
     phone: false,
+    email: false, // ➕
   });
 
   useEffect(() => {
@@ -65,7 +68,8 @@ export default function AdminSettingsTab() {
           setAdminInfo({
             login: user.login_admin,
             phone: user.phone_number_admin,
-            password: user.password_plain, // Используем поле из вашего запроса
+            email: user.email, // ➕
+            password: user.password_plain,
           });
         }
       } catch (error) {
@@ -99,6 +103,13 @@ export default function AdminSettingsTab() {
         phone: value.length > 0 && !/^\+79\d{9}$/.test(value),
       }));
     }
+
+    if (name === "newEmail") {
+      setErrors((prev) => ({
+        ...prev,
+        email: value.length > 0 && !/^\S+@\S+\.\S+$/.test(value),
+      }));
+    }
   };
 
   // ОТКРЫТИЕ МОДАЛКИ: теперь подставляем и пароль тоже
@@ -106,9 +117,10 @@ export default function AdminSettingsTab() {
     setAdminEditData({
       newLogin: adminInfo.login,
       newPhone: adminInfo.phone,
-      newPassword: adminInfo.password, // Теперь пароль подставляется сюда
+      newEmail: adminInfo.email, // ➕
+      newPassword: adminInfo.password,
     });
-    setErrors({ login: false, password: false, phone: false });
+    setErrors({ login: false, password: false, phone: false, email: false });
     setOpenAdminModal(true);
   };
 
@@ -126,6 +138,8 @@ export default function AdminSettingsTab() {
         updateData.newPhone = adminEditData.newPhone;
       if (adminEditData.newPassword !== adminInfo.password)
         updateData.newPassword = adminEditData.newPassword;
+      if (adminEditData.newEmail !== adminInfo.email)
+        updateData.newEmail = adminEditData.newEmail;
 
       // Если ничего не изменилось, просто закрываем
       if (Object.keys(updateData).length === 0) {
@@ -139,6 +153,7 @@ export default function AdminSettingsTab() {
         login: adminEditData.newLogin,
         phone: adminEditData.newPhone,
         password: adminEditData.newPassword,
+        email: adminEditData.newEmail,
       });
 
       setOpenAdminModal(false);
@@ -189,6 +204,25 @@ export default function AdminSettingsTab() {
               secondary={adminInfo.phone || "Не задан"}
             />
           </ListItem>
+          <Divider />
+          <ListItem disableGutters>
+            <ListItemText
+              primary="Email"
+              secondary={
+                adminInfo.email ? (
+                  <a
+                    href={`mailto:${adminInfo.email}`}
+                    style={{ color: "#1976d2" }}
+                  >
+                    {adminInfo.email}
+                  </a>
+                ) : (
+                  "Не задан"
+                )
+              }
+            />
+          </ListItem>
+
           <Divider />
           <ListItem disableGutters>
             <ListItemText
@@ -256,6 +290,18 @@ export default function AdminSettingsTab() {
           />
           <TextField
             fullWidth
+            label="Email"
+            name="newEmail"
+            type="email"
+            value={adminEditData.newEmail}
+            onChange={handleAdminChange}
+            error={errors.email}
+            helperText={errors.email ? "Некорректный email" : ""}
+            margin="normal"
+          />
+
+          <TextField
+            fullWidth
             label="Пароль"
             name="newPassword"
             // type="password" // Уберите это, если хотите чтобы пароль был виден текстом
@@ -274,7 +320,11 @@ export default function AdminSettingsTab() {
             onClick={handleSaveAdminData}
             variant="contained"
             disabled={
-              loading || errors.login || errors.phone || errors.password
+              loading ||
+              errors.login ||
+              errors.phone ||
+              errors.password ||
+              errors.email
             }
             startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
           >

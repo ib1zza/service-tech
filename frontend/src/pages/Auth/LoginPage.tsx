@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LockOutlined, Visibility, VisibilityOff } from "@mui/icons-material";
 import {
@@ -21,6 +21,7 @@ import * as yup from "yup";
 import api from "../../services/api";
 import { useAppDispatch } from "../../store/hooks";
 import { loginStart, loginSuccess, loginFailure } from "../../store/authSlice";
+import { adminApi } from "../../services/requests";
 
 const loginSchema = yup.object({
   login: yup.string().required("Логин обязателен").min(2, "Минимум 2 символа"),
@@ -38,6 +39,16 @@ export default function LoginPage() {
   const dispatch = useAppDispatch();
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  const [adminEmail, setAdminEmail] = useState("");
+
+  useEffect(() => {
+    adminApi.getAdminEmail().then((data) => {
+      setAdminEmail(data);
+    });
+  }, []);
+
+  console.log(adminEmail);
 
   const {
     control,
@@ -211,6 +222,25 @@ export default function LoginPage() {
           >
             {isSubmitting ? "Вход..." : "Войти"}
           </Button>
+
+          <Typography variant="body2" align="center" sx={{ mt: 1 }}>
+            Нет аккаунта? Можете отправить{" "}
+            <Box
+              component="a"
+              href={`mailto:${adminEmail}?subject=Заявка на регистрацию`}
+              sx={{
+                fontWeight: 700,
+                color: "#1976d2", // тот же синий, что у SERVICE APP
+                textDecoration: "none",
+                cursor: "pointer",
+                "&:hover": {
+                  textDecoration: "underline",
+                },
+              }}
+            >
+              заявку на регистрацию
+            </Box>
+          </Typography>
         </Box>
       </Box>
     </Container>

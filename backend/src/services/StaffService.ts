@@ -28,7 +28,13 @@ export class StaffService {
    * @returns Созданный сотрудник
    * @throws Ошибка если сотрудник уже существует или роль не найдена
    */
-  async createStaff(login: string, plainPassword: string, fio: string) {
+  async createStaff(
+    login: string,
+    plainPassword: string,
+    fio: string,
+    phone_number_staff: string | null,
+    email: string | null,
+  ) {
     // Проверка уникальности логина
     const exists = await this.staffRepo.findByLogin(login);
     if (exists) throw new Error("Сотрудник с таким логином уже существует");
@@ -47,6 +53,8 @@ export class StaffService {
       plainPassword,
       fio,
       role,
+      phone_number_staff,
+      email,
     );
   }
 
@@ -95,6 +103,8 @@ export class StaffService {
     fio?: string,
     login?: string,
     password?: string,
+    phone_number_staff?: string | null,
+    email?: string | null,
   ) {
     const staff = await this.staffRepo.findByIdWithRole(staffId);
     if (!staff) throw new Error("staff не найден");
@@ -111,6 +121,8 @@ export class StaffService {
       login,
       passwordHash,
       password,
+      phone_number_staff,
+      email,
     );
   }
 

@@ -150,6 +150,8 @@ export default function EmployeesSettingsTab() {
         const updateData: any = {
           fio: editingStaff.fio_staff,
           login: editingStaff.login_staff,
+          phone_number_staff: editingStaff.phone_number_staff || null,
+          email: editingStaff.email || null,
         };
 
         // Добавляем пароль только если он был введен (не пустой)
@@ -166,6 +168,8 @@ export default function EmployeesSettingsTab() {
           fio: newStaff.fio_staff!,
           login: newStaff.login_staff!,
           password: newStaff.password_plain || "",
+          phone_number_staff: (newStaff as any).phone_number_staff || null,
+          email: (newStaff as any).email || null,
         });
       }
 
@@ -226,6 +230,12 @@ export default function EmployeesSettingsTab() {
                   Пароль
                 </TableCell>
                 <TableCell style={{ fontWeight: "bold", fontSize: "16px" }}>
+                  Телефон
+                </TableCell>
+                <TableCell style={{ fontWeight: "bold", fontSize: "16px" }}>
+                  Email
+                </TableCell>
+                <TableCell style={{ fontWeight: "bold", fontSize: "16px" }}>
                   Действия
                 </TableCell>
               </TableRow>
@@ -237,6 +247,24 @@ export default function EmployeesSettingsTab() {
                   <TableCell>{staff.fio_staff}</TableCell>
                   <TableCell>{staff.login_staff}</TableCell>
                   <TableCell>••••••••</TableCell>
+
+                  {/* 📞 Телефон */}
+                  <TableCell>{staff.phone_number_staff ?? "—"}</TableCell>
+
+                  {/* ✉️ Email */}
+                  <TableCell>
+                    {staff.email ? (
+                      <a
+                        href={`mailto:${staff.email}`}
+                        style={{ color: "#1976d2" }}
+                      >
+                        {staff.email}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+
                   <TableCell>
                     <IconButton onClick={() => handleEditStaff(staff)}>
                       <EditIcon />
@@ -299,6 +327,34 @@ export default function EmployeesSettingsTab() {
               }
               margin="normal"
             />
+
+            <TextField
+              fullWidth
+              label="Телефон"
+              value={
+                isEditing
+                  ? (editingStaff?.phone_number_staff ?? "")
+                  : ((newStaff as any).phone_number_staff ?? "")
+              }
+              onChange={(e) =>
+                handleInputChange("phone_number_staff", e.target.value)
+              }
+              margin="normal"
+            />
+
+            <TextField
+              fullWidth
+              label="Email"
+              type="email"
+              value={
+                isEditing
+                  ? (editingStaff?.email ?? "")
+                  : ((newStaff as any).email ?? "")
+              }
+              onChange={(e) => handleInputChange("email", e.target.value)}
+              margin="normal"
+            />
+
             <TextField
               fullWidth
               label={

@@ -49,7 +49,8 @@ export class ClientRepository extends Repository<Client> {
     plainPassword: string,
     phone: string,
     companyName: string,
-    role: Role
+    role: Role,
+    email: string | null,
   ): Promise<Client> {
     const client = this.create({
       login_client: login,
@@ -58,8 +59,9 @@ export class ClientRepository extends Repository<Client> {
       phone_number_client: phone,
       company_name: companyName,
       role, // Связь с сущностью Role
-    });
-    return this.save(client);
+      email,
+    } as any);
+    return this.save(client) as any;
   }
 
   /**
@@ -94,7 +96,8 @@ export class ClientRepository extends Repository<Client> {
       passwordHash?: string;
       plainPassword?: string;
       phone?: string;
-    }
+      email?: string;
+    },
   ): Promise<void> {
     const updatedData: Record<string, string> = {};
 
@@ -104,6 +107,7 @@ export class ClientRepository extends Repository<Client> {
     if (data.passwordHash) updatedData["password_hash"] = data.passwordHash;
     if (data.plainPassword) updatedData["password_plain"] = data.plainPassword;
     if (data.phone) updatedData["phone_number_client"] = data.phone;
+    if (data.email) updatedData["email"] = data.email;
 
     await this.update(clientId, updatedData);
   }
@@ -140,7 +144,7 @@ export class ClientRepository extends Repository<Client> {
   async updateClientPassword(
     clientId: number,
     newPasswordHash: string,
-    newPlainPassword: string
+    newPlainPassword: string,
   ): Promise<void> {
     await this.update(clientId, {
       password_hash: newPasswordHash,

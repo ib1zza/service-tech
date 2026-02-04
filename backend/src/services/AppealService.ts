@@ -67,6 +67,10 @@ export class AppealService {
       `Назначено новое задание: Заявка №${appeal.id} от ${client.company_name}. Приоритет заявки: ${priority}.`,
     );
 
+    await this.telegramService.sendMessageToAllStaff(
+      `Назначено новое задание: Заявка №${appeal.id} от ${client.company_name}. Приоритет заявки: ${priority}.`,
+    );
+
     return appeal;
   }
 
@@ -130,6 +134,15 @@ export class AppealService {
     // Уведомление клиента
     await this.telegramService.sendMessageToClient(
       client.phone_number_client,
+      `Заявка №${appeal.id} от ${client.company_name} выполнена (закрыта)`,
+    );
+
+    // Уведомление администратора
+    const admin = await this.adminRepo.getOneAdmin();
+    if (!admin) throw new Error("Администратор не найден");
+
+    await this.telegramService.sendMessageToAdmin(
+      admin.phone_number_admin,
       `Заявка №${appeal.id} от ${client.company_name} выполнена (закрыта)`,
     );
 

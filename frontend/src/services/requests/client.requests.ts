@@ -6,6 +6,7 @@ interface CreateClientData {
   password: string; // Пароль клиента.
   phone: string; // Номер телефона клиента.
   companyName: string; // Название организации клиента.
+  email?: string;
 }
 
 // Интерфейс для данных, необходимых при обновлении информации о клиенте.
@@ -16,6 +17,7 @@ interface UpdateClientData {
   companyName?: string; // Новое название организации (необязательно).
   currentPassword?: string; // Текущий пароль (необходим при смене пароля).
   newPassword?: string; // Новый пароль (необязательно).
+  email?: string;
 }
 
 // Интерфейс для базовых данных клиента, возвращаемых с сервера.
@@ -43,6 +45,7 @@ export interface ClientFromServer {
   company_name: string; // Название организации клиента.
   password?: string; // Пароль (используется только для форм, не хранится в открытом виде на сервере).
   password_plain?: string; // Пароль в открытом виде (используется только для форм, не хранится в открытом виде на сервере).
+  email: string | null;
 }
 
 // Объект `clientApi` содержит методы для взаимодействия с API, связанными с клиентами.
@@ -75,7 +78,7 @@ export const clientApi = {
       return response.data;
     } catch (error: any) {
       throw new Error(
-        error.response?.data?.error || "Failed to get clients list"
+        error.response?.data?.error || "Failed to get clients list",
       );
     }
   },
@@ -92,7 +95,7 @@ export const clientApi = {
       return response.data;
     } catch (error: any) {
       throw new Error(
-        error.response?.data?.error || "Failed to get client information"
+        error.response?.data?.error || "Failed to get client information",
       );
     }
   },
@@ -109,7 +112,7 @@ export const clientApi = {
       return response.data;
     } catch (error: any) {
       throw new Error(
-        error.response?.data?.error || "Failed to get client appeals"
+        error.response?.data?.error || "Failed to get client appeals",
       );
     }
   },
@@ -123,7 +126,7 @@ export const clientApi = {
    */
   updateClient: async (
     id: number | "me",
-    data: UpdateClientData
+    data: UpdateClientData,
   ): Promise<Client> => {
     try {
       const response = await api.put(`/clients/${id}`, data);
@@ -160,7 +163,7 @@ export const clientApi = {
   updateClientPassword: async (
     id: number | "me",
     currentPassword: string,
-    newPassword: string
+    newPassword: string,
   ): Promise<Client> => {
     try {
       return await clientApi.updateClient(id, {
@@ -169,7 +172,7 @@ export const clientApi = {
       });
     } catch (error: any) {
       throw new Error(
-        error.response?.data?.error || "Failed to update password"
+        error.response?.data?.error || "Failed to update password",
       );
     }
   },

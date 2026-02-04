@@ -39,6 +39,10 @@ export class Client {
   @Column({ length: 200, nullable: true })
   telegram_id: string;
 
+  // Email (макс. 40 символов)
+  @Column({ length: 40, nullable: true })
+  email: string;
+
   // Связь с ролью (многие клиенты к одной роли)
   @ManyToOne(() => Role, (role) => role.clients)
   role: Role;

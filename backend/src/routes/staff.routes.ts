@@ -9,6 +9,8 @@ interface CreateStaffBody {
   login: string;
   password: string;
   fio: string;
+  phone_number_staff: string | null;
+  email: string | null;
 }
 
 // Роутер для работы с сотрудниками
@@ -31,15 +33,21 @@ export const staffRouter = (staffService: StaffService) => {
     "/",
     async (req: Request<{}, {}, CreateStaffBody>, res: Response) => {
       try {
-        const { login, password, fio } = req.body;
-        const staff = await staffService.createStaff(login, password, fio);
+        const { login, password, fio, phone_number_staff, email } = req.body;
+        const staff = await staffService.createStaff(
+          login,
+          password,
+          fio,
+          phone_number_staff,
+          email,
+        );
         res.status(201).json(staff);
       } catch (error: unknown) {
         const message =
           error instanceof Error ? error.message : "Ошибка создания сотрудника";
         res.status(400).json({ error: message });
       }
-    }
+    },
   );
 
   // Получение заявок сотрудника
@@ -62,7 +70,7 @@ export const staffRouter = (staffService: StaffService) => {
             : "Ошибка получения заявок сотрудника";
         res.status(400).json({ error: message });
       }
-    }
+    },
   );
 
   // Обновление данных сотрудника
@@ -74,8 +82,15 @@ export const staffRouter = (staffService: StaffService) => {
         return;
       }
 
-      const { login, password, fio } = req.body;
-      const staff = await staffService.editStaff(staffId, fio, login, password);
+      const { login, password, fio, phone_number_staff, email } = req.body;
+      const staff = await staffService.editStaff(
+        staffId,
+        fio,
+        login,
+        password,
+        phone_number_staff,
+        email,
+      );
       res.json(staff);
     } catch (error: unknown) {
       const message =

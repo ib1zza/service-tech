@@ -34,7 +34,7 @@ export default function ClientsSettingsTab() {
   const [clients, setClients] = useState<ClientFromServer[]>([]);
   // Состояние для данных клиента, который в данный момент редактируется.
   const [editingClient, setEditingClient] = useState<ClientFromServer | null>(
-    null
+    null,
   );
   console.log(editingClient);
   // Состояние для данных нового клиента, который будет добавлен.
@@ -43,6 +43,7 @@ export default function ClientsSettingsTab() {
     password_plain: "",
     phone_number_client: "",
     company_name: "",
+    email: "",
   });
   const handleDownloadReport = (companyName: string) => {
     const filename = `${companyName}_report.xlsx`;
@@ -175,6 +176,7 @@ export default function ClientsSettingsTab() {
       password_plain: "",
       phone_number_client: "",
       company_name: "",
+      email: null,
     });
     // Сброс ошибок и сообщений при открытии
     setErrors({
@@ -236,14 +238,16 @@ export default function ClientsSettingsTab() {
     try {
       if (isEditing && editingClient) {
         // Если режим редактирования, обновляем клиента.
+
+        console.log("submit", editingClient);
         await clientApi.updateClient(editingClient.id, {
           login: editingClient.login_client,
           phone: editingClient.phone_number_client,
           companyName: editingClient.company_name,
-          // Пароль обновляется только если он был введен (не пуст).
+          email: editingClient.email || null,
           ...(editingClient.password_plain && {
             currentPassword: clients.find((c) => c.id === editingClient.id)!
-              .password_plain, // Заглушка, в реальном приложении нужно запросить текущий пароль.
+              .password_plain,
             newPassword: editingClient.password_plain,
           }),
         });
@@ -251,9 +255,10 @@ export default function ClientsSettingsTab() {
         // Если режим добавления, создаем нового клиента.
         await clientApi.createClient({
           login: newClient.login_client,
-          password: newClient.password_plain!, // Пароль обязателен при создании.
+          password: newClient.password_plain!,
           phone: newClient.phone_number_client,
           companyName: newClient.company_name,
+          email: newClient.email || null,
         });
       }
       fetchClients(); // Обновляем список клиентов.
@@ -267,7 +272,7 @@ export default function ClientsSettingsTab() {
   // Универсальный обработчик изменения полей ввода в диалоге.
   const handleInputChange = (
     field: keyof Omit<ClientFromServer, "id">,
-    value: string
+    value: string,
   ) => {
     // Временно создаем объект для валидации, чтобы получить актуальные ошибки при вводе
     const currentData =
@@ -346,6 +351,9 @@ export default function ClientsSettingsTab() {
                   Телефон
                 </TableCell>
                 <TableCell style={{ fontWeight: "bold", fontSize: "16px" }}>
+                  Email
+                </TableCell>
+                <TableCell style={{ fontWeight: "bold", fontSize: "16px" }}>
                   Действия
                 </TableCell>
               </TableRow>
@@ -358,6 +366,18 @@ export default function ClientsSettingsTab() {
                   <TableCell>{client.login_client}</TableCell>
                   <TableCell>••••••••</TableCell> {/* Пароль скрыт */}
                   <TableCell>{client.phone_number_client}</TableCell>
+                  <TableCell>
+                    {client.email ? (
+                      <a
+                        href={`mailto:${client.email}`}
+                        style={{ color: "#1976d2" }}
+                      >
+                        {client.email}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
                   <TableCell>
                     <IconButton onClick={() => handleEditClient(client)}>
                       <EditIcon />
@@ -433,6 +453,19 @@ export default function ClientsSettingsTab() {
               helperText={errors.phone ? errorMessages.phone : ""}
               margin="normal"
             />
+            <TextField
+              fullWidth
+              label="Email"
+              type="email"
+              value={
+                isEditing
+                  ? (editingClient?.email ?? "")
+                  : (newClient.email ?? "")
+              }
+              onChange={(e) => handleInputChange("email", e.target.value)}
+              margin="normal"
+            />
+
             <TextField
               fullWidth
               label="Логин"

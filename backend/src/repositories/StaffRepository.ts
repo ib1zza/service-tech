@@ -24,6 +24,8 @@ export class StaffRepository extends Repository<Staff> {
     plainPassword: string,
     fio: string,
     role: Role,
+    phone_number_staff: string | null,
+    email: string | null,
   ): Promise<Staff> {
     const staff = this.create({
       login_staff: login,
@@ -31,8 +33,10 @@ export class StaffRepository extends Repository<Staff> {
       password_plain: plainPassword,
       fio_staff: fio,
       role,
-    });
-    return this.save(staff);
+      phone_number_staff,
+      email,
+    } as any);
+    return this.save(staff) as any;
   }
 
   // Получение всех сотрудников с их обращениями
@@ -54,13 +58,26 @@ export class StaffRepository extends Repository<Staff> {
     login?: string,
     passwordHash?: string,
     passwordPlain?: string,
+    phone_number_staff?: string | null,
+    email?: string | null,
   ): Promise<void> {
     const updatedData: Record<string, string> = {};
     if (fio) updatedData["fio_staff"] = fio;
     if (login) updatedData["login_staff"] = login;
     if (passwordHash) updatedData["password"] = passwordHash;
     if (passwordPlain) updatedData["password_plain"] = passwordPlain;
+    if (phone_number_staff)
+      updatedData["phone_number_staff"] = phone_number_staff;
+    if (email) updatedData["email"] = email;
 
     await this.update(staffId, updatedData);
+  }
+
+  // Поиск администратора по номеру телефона
+  async getStaffByPhone(phone: string): Promise<Staff | null> {
+    return this.findOne({
+      where: { phone_number_staff: phone },
+      relations: ["role"],
+    });
   }
 }

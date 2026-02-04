@@ -10,6 +10,7 @@ interface CreateClientBody {
   password: string;
   phone: string;
   companyName: string;
+  email: string | null;
 }
 
 interface UpdateClientBody {
@@ -18,6 +19,7 @@ interface UpdateClientBody {
   companyName?: string;
   currentPassword?: string;
   newPassword?: string;
+  email?: string;
 }
 
 // Роутер для работы с клиентами
@@ -38,13 +40,14 @@ export const clientRouter = (clientService: ClientService) => {
     requireRole("admin"),
     async (req: Request, res: Response) => {
       try {
-        const { login, password, phone, companyName } =
+        const { login, password, phone, companyName, email } =
           req.body as CreateClientBody;
         const client = await clientService.createClient(
           login,
           password,
           phone,
-          companyName
+          companyName,
+          email,
         );
         res.status(201).json(client);
       } catch (error: unknown) {
@@ -52,7 +55,7 @@ export const clientRouter = (clientService: ClientService) => {
           error instanceof Error ? error.message : "Unknown error";
         res.status(400).json({ error: message });
       }
-    }
+    },
   );
 
   // Получение всех клиентов (только админы)
@@ -68,7 +71,7 @@ export const clientRouter = (clientService: ClientService) => {
           error instanceof Error ? error.message : "Unknown error";
         res.status(500).json({ error: message });
       }
-    }
+    },
   );
 
   // Получение клиента по ID
@@ -100,7 +103,7 @@ export const clientRouter = (clientService: ClientService) => {
       } catch (error) {
         next(error);
       }
-    }
+    },
   );
 
   // Получение заявок клиента
@@ -128,7 +131,7 @@ export const clientRouter = (clientService: ClientService) => {
       } catch (error) {
         next(error);
       }
-    }
+    },
   );
 
   // Обновление данных клиента
@@ -151,15 +154,23 @@ export const clientRouter = (clientService: ClientService) => {
           return;
         }
 
-        const { login, phone, companyName, currentPassword, newPassword } =
-          req.body as UpdateClientBody;
+        const {
+          login,
+          phone,
+          companyName,
+          currentPassword,
+          newPassword,
+          email,
+        } = req.body as UpdateClientBody;
 
+        console.log("email check", email);
         // Обновление данных
-        if (login || phone || companyName) {
+        if (login || phone || companyName || email) {
           await clientService.updateClient(clientId, {
             login,
             phone,
             companyName,
+            email,
           });
         }
 
@@ -168,7 +179,7 @@ export const clientRouter = (clientService: ClientService) => {
           await clientService.updateClientPassword(
             clientId,
             currentPassword,
-            newPassword
+            newPassword,
           );
         }
 
@@ -177,7 +188,7 @@ export const clientRouter = (clientService: ClientService) => {
       } catch (error) {
         next(error);
       }
-    }
+    },
   );
 
   // Удаление клиента (только админы)
@@ -194,7 +205,7 @@ export const clientRouter = (clientService: ClientService) => {
           error instanceof Error ? error.message : "Unknown error";
         res.status(400).json({ error: message });
       }
-    }
+    },
   );
 
   return router;

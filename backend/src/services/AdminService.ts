@@ -28,7 +28,7 @@ export class AdminService {
     login: string,
     plainPassword: string,
     fio: string,
-    phone: string
+    phone: string,
   ) {
     // Проверка существования администратора
     const exists = await this.adminRepo.findByLogin(login);
@@ -48,7 +48,7 @@ export class AdminService {
       plainPassword,
       fio,
       phone,
-      role
+      role,
     );
   }
 
@@ -65,7 +65,8 @@ export class AdminService {
     adminId: number,
     newLogin?: string,
     newPassword?: string,
-    newPhone?: string
+    newPhone?: string,
+    newEmail?: string | null,
   ) {
     // Поиск администратора
     const admin = await this.adminRepo.findOne({ where: { id: adminId } });
@@ -75,14 +76,25 @@ export class AdminService {
     if (!newLogin) newLogin = admin.login_admin;
     if (!newPassword) newPassword = admin.password_plain;
     if (!newPhone) newPhone = admin.phone_number_admin;
+    if (!newEmail) newEmail = admin.email;
 
     // Обновление полей
     admin.login_admin = newLogin;
     admin.password = await bcrypt.hash(newPassword, 10);
     admin.password_plain = newPassword;
     admin.phone_number_admin = newPhone;
+    admin.email = newEmail;
 
     // Сохранение изменений
     return this.adminRepo.save(admin);
+  }
+  /**
+   * Получение почты администратора
+   * @returns Почта администратора
+   */
+  async getAdminEmail() {
+    const admin = await this.adminRepo.getOneAdmin();
+    if (!admin) throw new Error("Администратор не найден");
+    return admin.email;
   }
 }

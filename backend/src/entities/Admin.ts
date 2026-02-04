@@ -31,6 +31,10 @@ export class Admin {
   @Column({ length: 200, nullable: true })
   telegram_id: string;
 
+  // Email (макс. 40 символов)
+  @Column({ length: 40, nullable: true })
+  email: string;
+
   // Связь многие-к-одному с сущностью Role
   // Один Role может быть у многих Admin
   @ManyToOne(() => Role, (role) => role.admins)

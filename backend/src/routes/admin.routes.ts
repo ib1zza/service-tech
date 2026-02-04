@@ -6,11 +6,23 @@ import { requireRole } from "../middlewares/require-role";
 import { body } from "express-validator";
 import { validateRequest } from "../middlewares/validate-request";
 
-// Роутер для администраторов
 export const adminRouter = (adminService: AdminService) => {
   const router = Router();
 
-  // Применение middleware для проверки аутентификации и роли
+  // ✅ ПУБЛИЧНЫЙ РОУТ (без авторизации)
+  router.get(
+    "/email",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const adminEmail = await adminService.getAdminEmail();
+        res.json({ email: adminEmail });
+      } catch (error: unknown) {
+        next(error);
+      }
+    },
+  );
+
+  // 🔒 ВСЁ НИЖЕ — ТОЛЬКО ДЛЯ ADMIN
   router.use((req: Request, res: Response, next: NextFunction) => {
     currentUser(req, res, (err?: any) => {
       if (err) return next(err);
@@ -25,70 +37,55 @@ export const adminRouter = (adminService: AdminService) => {
   router.post(
     "/",
     [
-      // Валидация входных данных
-      body("login")
-        .trim()
-        .isLength({ min: 2, max: 10 })
-        .withMessage("Login must be 2-10 chars"),
-      body("password")
-        .trim()
-        .isLength({ min: 2, max: 10 })
-        .withMessage("Password must be 2-10 chars"),
-      body("fio").trim().notEmpty().withMessage("Full name is required"),
-      body("phone")
-        .trim()
-        .isMobilePhone("any")
-        .withMessage("Invalid phone number"),
+      body("login").trim().isLength({ min: 2, max: 10 }),
+      body("password").trim().isLength({ min: 2, max: 10 }),
+      body("fio").trim().notEmpty(),
+      body("phone").trim().isMobilePhone("any"),
     ],
     (req: Request, res: Response, next: NextFunction) => {
-      validateRequest(req, res, (err?: any) => {
-        if (err) return next(err);
-        (async () => {
-          try {
-            const { login, password, fio, phone } = req.body;
-            const admin = await adminService.createAdmin(
-              login,
-              password,
-              fio,
-              phone
-            );
-            res.status(201).json(admin);
-          } catch (error: unknown) {
-            next(error);
-          }
-        })();
+      validateRequest(req, res, async () => {
+        try {
+          const { login, password, fio, phone } = req.body;
+          const admin = await adminService.createAdmin(
+            login,
+            password,
+            fio,
+            phone,
+          );
+          res.status(201).json(admin);
+        } catch (error) {
+          next(error);
+        }
       });
-    }
+    },
   );
 
   // Обновление учетных данных администратора
   router.put(
     "/credentials",
     [
-      // Валидация обновляемых данных
       body("newLogin").trim().isLength({ min: 2, max: 10 }).optional(),
       body("newPassword").trim().isLength({ min: 2, max: 10 }).optional(),
       body("newPhone").trim().isLength({ min: 9, max: 13 }).optional(),
+      body("newEmail").isEmail().optional(),
     ],
     (req: Request, res: Response, next: NextFunction) => {
-      validateRequest(req, res, (err?: any) => {
-        if (err) return next(err);
-        (async () => {
-          try {
-            const { newLogin, newPassword, newPhone } = req.body;
-            const admin = await adminService.updateAdminCredentials(
-              req.currentUser!.id,
-              newLogin,
-              newPassword,
-              newPhone
-            );
-            res.json(admin);
-          } catch (error: unknown) {
-            next(error);
-          }
-        })();
+      validateRequest(req, res, async () => {
+        try {
+          const { newLogin, newPassword, newPhone, newEmail } = req.body;
+          const admin = await adminService.updateAdminCredentials(
+            req.currentUser!.id,
+            newLogin,
+            newPassword,
+            newPhone,
+            newEmail,
+          );
+          res.json(admin);
+        } catch (error) {
+          next(error);
+        }
       });
-    }
+    },
   );
 
   return router;

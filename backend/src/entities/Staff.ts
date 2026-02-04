@@ -42,4 +42,16 @@ export class Staff {
   // Связь с заявками, которые сотрудник закрыл
   @OneToMany(() => Appeal, (appeal) => appeal.fio_staff_close_id)
   closed_appeals: Appeal[];
+
+  // Номер телефона (макс. 12 символов)
+  @Column({ length: 12, nullable: true })
+  phone_number_staff: string;
+
+  // Email (макс. 40 символов)
+  @Column({ length: 40, nullable: true })
+  email: string;
+
+  // ID в Telegram (необязательное поле)
+  @Column({ length: 200, nullable: true })
+  telegram_id: string;
 }

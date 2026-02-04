@@ -1,9 +1,10 @@
 import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
-import { DataSource } from "typeorm";
+import { DataSource, IsNull, Not } from "typeorm";
 import { Client } from "../entities/Client";
 import { ClientRepository } from "../repositories/ClientRepository";
 import { AdminRepository } from "../repositories/AdminRepository";
+import { StaffRepository } from "../repositories/StaffRepository";
 
 dotenv.config();
 
@@ -11,6 +12,7 @@ export class TelegramService {
   private bot: TelegramBot;
   private clientRepo: ClientRepository;
   private adminRepo: AdminRepository;
+  private staffRepo: StaffRepository;
 
   constructor(dataSource: DataSource) {
     // Проверяем наличие токена бота в переменных окружения
@@ -27,6 +29,7 @@ export class TelegramService {
     // Создаем экземпляры репозиториев для работы с данными клиентов и админов
     this.clientRepo = new ClientRepository(dataSource);
     this.adminRepo = new AdminRepository(dataSource);
+    this.staffRepo = new StaffRepository(dataSource);
     // Вызываем метод для настройки обработчиков событий бота
     this.setupBot();
   }
@@ -45,52 +48,48 @@ export class TelegramService {
       const phone = match[1]; // Например, из t.me/bot?start=79123456789
 
       try {
-        // Ищем клиента и админа с этим номером телефона в базе данных
         const client = await this.clientRepo.getClientByPhone(phone);
         const admin = await this.adminRepo.getAdminByPhone(phone);
+        const staff = await this.staffRepo.getStaffByPhone(phone);
 
-        // Если ни клиент, ни админ не найдены, отправляем сообщение об ошибке
-        if (!client && !admin) {
+        if (!client && !admin && !staff) {
           return this.bot.sendMessage(
             chatId,
-            "❌ Клиент с таким номером телефона не найден",
+            "❌ Пользователь с таким номером телефона не найден",
           );
         }
 
-        // Если найден клиент
         if (client) {
-          // Обновляем его telegram_id в базе данных, чтобы привязать аккаунт
           await this.clientRepo.update(client.id, {
             telegram_id: chatId.toString(),
           });
 
-          // Отправляем клиенту сообщение об успешной привязке
           this.bot.sendMessage(
             chatId,
-            "Вас приветствует СервисБот! ✅ Вы успешно привязали Telegram-аккаунт к вашему профилю!\n" +
-              "Теперь вы будете получать уведомления здесь.",
+            "Вас приветствует СервисБот! ✅ Telegram успешно привязан к профилю клиента.",
           );
-
-          // Логируем успешную привязку
-          console.log(`Клиент ${phone} привязал Telegram: chatId=${chatId}`);
         }
 
-        // Если найден админ
         if (admin) {
-          // Обновляем его telegram_id в базе данных
           await this.adminRepo.update(admin.id, {
             telegram_id: chatId.toString(),
           });
 
-          // Отправляем админу сообщение об успешной привязке
           this.bot.sendMessage(
             chatId,
-            "Вас приветствует СервисБот! ✅ Вы успешно привязали Telegram-аккаунт к вашему профилю!\n" +
-              "Теперь вы будете получать уведомления здесь.",
+            "Вас приветствует СервисБот! ✅ Telegram успешно привязан к профилю администратора.",
           );
+        }
 
-          // Логируем успешную привязку
-          console.log(`Админ ${phone} привязал Telegram: chatId=${chatId}`);
+        if (staff) {
+          await this.staffRepo.update(staff.id, {
+            telegram_id: chatId.toString(),
+          });
+
+          this.bot.sendMessage(
+            chatId,
+            "Вас приветствует СервисБот! ✅ Telegram успешно привязан к профилю сотрудника.",
+          );
         }
       } catch (error) {
         // Обработка ошибок, если что-то пошло не так
@@ -134,6 +133,43 @@ export class TelegramService {
     } catch (error) {
       console.error("Ошибка отправки сообщения:", error);
       return false;
+    }
+  }
+
+  public async sendMessageToStaff(
+    phone: string,
+    message: string,
+  ): Promise<boolean> {
+    try {
+      // Ищем клиента в базе данных по номеру телефона
+      const client = await this.staffRepo.getStaffByPhone(phone);
+
+      // Проверяем, существует ли клиент и привязан ли у него Telegram-аккаунт
+      if (!client || !client.telegram_id) {
+        console.log(`Сотрудник ${phone} не привязал Telegram`);
+        return false;
+      }
+
+      // Отправляем сообщение клиенту, используя его telegram_id
+      await this.bot.sendMessage(client.telegram_id, message);
+      return true;
+    } catch (error) {
+      console.error("Ошибка отправки сообщения:", error);
+      return false;
+    }
+  }
+
+  public async sendMessageToAllStaff(message: string) {
+    try {
+      const allStaffsWithPhones = await this.staffRepo.find({
+        where: { telegram_id: Not(IsNull()) },
+      });
+
+      for (const staff of allStaffsWithPhones) {
+        this.bot.sendMessage(staff.telegram_id, message);
+      }
+    } catch (error) {
+      console.error("Ошибка отправки сообщения:", error);
     }
   }
 
