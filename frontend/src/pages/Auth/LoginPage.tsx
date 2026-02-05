@@ -223,7 +223,15 @@ export default function LoginPage() {
             {isSubmitting ? "Вход..." : "Войти"}
           </Button>
 
-          <Typography variant="body2" align="center" sx={{ mt: 1 }}>
+          <Typography
+            variant="body2"
+            align="center"
+            sx={{
+              fontWeight: 700,
+              textDecoration: "none",
+              mt: 1,
+            }}
+          >
             Нет аккаунта? Можете отправить{" "}
             <Box
               component="a"

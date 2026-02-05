@@ -247,6 +247,15 @@ export class AppealService {
       `Заявка №${prevAppeal.id} от ${client.company_name} отменена заказчиком.`,
     );
 
+    await this.telegramService.sendMessageToClient(
+      client.phone_number_client,
+      `Заявка №${prevAppeal.id} от ${client.company_name} отменена заказчиком.`,
+    );
+
+    await this.telegramService.sendMessageToAllStaff(
+      `Заявка №${prevAppeal.id} от ${client.company_name} отменена заказчиком.`,
+    );
+
     if (prevAppeal.company_name_id) {
       const appeals = await this.appealRepo.find({
         where: {
