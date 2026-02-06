@@ -129,7 +129,7 @@ export default function LoginPage() {
         <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
           <LockOutlined />
         </Avatar>
-        <Typography component="h1" variant="h5">
+        <Typography component="h1" sx={{ fontWeight: "bold" }} variant="h5">
           Вход в систему
         </Typography>
 
@@ -232,7 +232,7 @@ export default function LoginPage() {
               mt: 1,
             }}
           >
-            Нет аккаунта? Можете отправить{" "}
+            Нет аккаунта? Можете отправить <br />
             <Box
               component="a"
               href={`mailto:${adminEmail}?subject=Заявка на регистрацию`}
